@@ -21,7 +21,7 @@ public class MockTargetServer {
 		
 		System.out.println("Got here!");
 		ResponseBuilder builder = Response.ok();
-		builder.entity("<html><head><title>MockTargetServer</title></head><body><h1>It works without query strings!</h1></body></html>");
+		builder.entity("<html><head><title>MockTargetServer</title></head><body><h1>It works " + (k1 != null && k2 != null ? "with" : "without") + " query strings!</h1></body></html>");
 		return builder.build();
 	}
 }

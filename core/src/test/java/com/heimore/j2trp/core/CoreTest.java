@@ -66,7 +66,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		
 	}
 	
-	@Test(enabled = false)
+	@Test(enabled = true)
 	public void testNormalRequestWithQueryString() throws Exception {
 		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/someFile.html?k1=v1&k2=v2");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
@@ -79,7 +79,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		Assert.assertEquals(200, resp.getStatus());
 		String[] splits = resp.getContentAsString().split("\\x0d\\x0a\\x0d\\x0a");
 //		System.out.println(splits[0]);
-		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works!</h1></body></html>", splits[1]);
+		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with query strings!</h1></body></html>", splits[1]);
 		
 		
 	}
