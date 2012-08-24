@@ -1,6 +1,8 @@
 package com.heimore.j2trp.core;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
@@ -26,6 +28,17 @@ public class MockTargetServer {
 		System.out.println("Got here!");
 		ResponseBuilder builder = Response.ok();
 		builder.entity("<html><head><title>MockTargetServer</title></head><body><h1>It works " + (k1 != null && k2 != null ? "with" : "without") + " query strings!</h1></body></html>");
+		return builder.build();
+	}
+	
+	@GET
+//	@Produces("text/html")
+	@Path("/redirect.html")
+	public Response executeRedirect (@Context Request req) throws IOException, URISyntaxException {
+		
+		System.out.println("Got here!");
+		ResponseBuilder builder = Response.temporaryRedirect(new URI("other_location.html"));
+//		builder.entity("<html><head><title>MockTargetServer</title></head><body><h1>It works " + (k1 != null && k2 != null ? "with" : "without") + " query strings!</h1></body></html>");
 		return builder.build();
 	}
 	

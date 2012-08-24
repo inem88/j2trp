@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -28,7 +29,9 @@ public class ReverseProxy extends HttpServlet {
 	private static final Charset ASCII = Charset.forName("US-ASCII");
 	private static final byte[] CR_LF = new byte[] { (byte) 0x0d, (byte) 0x0a };
 	private static final int[] WELL_KNOWN_PORT = new int[] { 80, 443 }; // Array must be sorted.
-
+	private static final byte[] HEADER_END_MARKER = new byte[] { (byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a };
+	private static final int HEADER_END_MARKER_INT = 0x0d0a0d0a;
+	
     public ReverseProxy() {
     }
 
@@ -142,11 +145,42 @@ public class ReverseProxy extends HttpServlet {
 			// Read response from target server.
 			InputStream proxiedInputSteam = socket.getInputStream();
 			OutputStream clientsRespOs = response.getOutputStream();
+			ByteArrayOutputStream bufferedHeadersFromTarget = new ByteArrayOutputStream();
+			ByteBuffer last4Bytes = ByteBuffer.allocate(4);
 			int bytesRead = proxiedInputSteam.read(bodyBuffer);
+			int markerIndex = 0;
+			int totalBytesRead = 0;
+			int realMarkerIndex = 0;
+			boolean headerFound = false;
+					
 			while (bytesRead != -1) {
+				
+				totalBytesRead += bytesRead;
+				// Scan for header marker...
+				for (int i = 0; i < bytesRead && !headerFound; i++) {
+					if (bodyBuffer[i] == HEADER_END_MARKER[markerIndex++]) {
+						last4Bytes.put(bodyBuffer[i]);
+						if (!last4Bytes.hasRemaining()) {
+							// Found marker?
+							System.out.println("Found it @ " + (totalBytesRead - bytesRead + i));
+							markerIndex = 0;
+							headerFound = true;
+							realMarkerIndex = i;
+						}
+					}
+					else {
+						markerIndex = 0;
+						last4Bytes.clear();
+					}
+				}
+				bufferedHeadersFromTarget.write(bodyBuffer, 0, bytesRead);
 				clientsRespOs.write(bodyBuffer, 0, bytesRead);
+				
+				
 				bytesRead = proxiedInputSteam.read(bodyBuffer);
 			}
+			
+			System.out.println("---->" + new String(bufferedHeadersFromTarget.toByteArray(), "ISO8859-1"));
 			targetOutputStream.close();
 			clientsRespOs.close();
 		

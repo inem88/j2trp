@@ -107,7 +107,8 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test(enabled = true)
 	public void testNormalRequestWithQueryString() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/someFile.html?k1=v1&k2=v2");
+		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/someFile.html");
+		req.setQueryString("k1=v1&k2=v2");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
