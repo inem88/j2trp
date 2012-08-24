@@ -85,6 +85,9 @@ public class ReverseProxy extends HttpServlet {
 			print(headerBuffer, " HTTP/1.0");
 			crlf(headerBuffer);
 			copyHeaders(headerBuffer, request);
+			print(headerBuffer, "X-Forwarded-For: ");
+			print(headerBuffer, request.getRemoteAddr());
+			crlf(headerBuffer);
 			print(headerBuffer, "Host: "); // Add port?
 			print(headerBuffer, targetHost);
 			if (!isWellKnownPort(targetPort)) {
@@ -94,15 +97,15 @@ public class ReverseProxy extends HttpServlet {
 			crlf(headerBuffer);
 			crlf(headerBuffer);
 			
-//			if (request.getMethod().equals("POST")) {
-//				InputStream is = request.getInputStream();
-//				int bytesRead = is.read(bodyBuffer);
-//				while (bytesRead != -1) {
-//					ps.write(bodyBuffer, 0, bytesRead);
-//					bytesRead = is.read(bodyBuffer);
-//				}
-//			}
-//			ps.close();
+			// If request is a POST, relay the body of the request.
+			if (request.getMethod().equals("POST")) {
+				InputStream is = request.getInputStream();
+				int bytesRead = is.read(bodyBuffer);
+				while (bytesRead != -1) {
+					headerBuffer.write(bodyBuffer, 0, bytesRead);
+					bytesRead = is.read(bodyBuffer);
+				}
+			}
 			
 			// Write output to target server.
 			OutputStream targetOutputStream = socket.getOutputStream();

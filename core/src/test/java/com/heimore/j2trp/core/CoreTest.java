@@ -83,5 +83,24 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		
 		
 	}
+	
+	@Test(enabled = true)
+	public void testNormalPost() throws Exception {
+		MockHttpServletRequest req = new MockHttpServletRequest("POST", "/sfibonusadmin/someFile.html");
+		MockHttpServletResponse resp = new MockHttpServletResponse();
+		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
+				"reverseProxy", HttpServlet.class);
+		
+		req.addHeader("Accept", "*/*");
+		req.addHeader("User-Agent", "MockHttpServletRequest");
+		reverseProxyServlet.service(req, resp);
+		Assert.assertEquals(200, resp.getStatus());
+		String[] splits = resp.getContentAsString().split("\\x0d\\x0a\\x0d\\x0a");
+		System.out.println(splits[0]);
+		System.out.println(splits[1]);
+		// Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with query strings!</h1></body></html>", splits[1]);
+		
+		
+	}
 
 }
