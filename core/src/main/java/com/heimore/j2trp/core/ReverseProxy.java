@@ -11,12 +11,16 @@ import java.util.Enumeration;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
 public class ReverseProxy extends HttpServlet {
 	
+	private static final Logger LOG = Logger.getLogger(ReverseProxy.class);
 	
 	private String targetHost;
 	private int targetPort;
@@ -41,6 +45,26 @@ public class ReverseProxy extends HttpServlet {
         		}
     		}
     		
+    	}
+    }
+    
+    protected static void copyCookies (OutputStream ps, HttpServletRequest request) throws IOException {
+    	Cookie[] cookies = request.getCookies();
+    	
+    	if (cookies != null) {
+    		print(ps, "Cookie: ");
+        	for (int i = 0; i < cookies.length; i++) {
+        		print(ps, cookies[i].getName());
+        		print(ps, "=");
+        		print(ps, cookies[i].getValue());
+        		if (i < cookies.length - 1) {
+        			print(ps, "; ");
+        		}
+        		else {
+        			crlf(ps);
+        		}
+        	}
+
     	}
     }
     
@@ -85,6 +109,7 @@ public class ReverseProxy extends HttpServlet {
 			print(headerBuffer, " HTTP/1.0");
 			crlf(headerBuffer);
 			copyHeaders(headerBuffer, request);
+			copyCookies(headerBuffer, request);
 			print(headerBuffer, "X-Forwarded-For: ");
 			print(headerBuffer, request.getRemoteAddr());
 			crlf(headerBuffer);
