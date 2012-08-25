@@ -40,6 +40,10 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		MockServletConfig servletConfig = new MockServletConfig();
 		servletConfig.addInitParameter("TARGET_HOST", "127.0.0.1");
 		servletConfig.addInitParameter("TARGET_PORT", "64000");
+		servletConfig.addInitParameter("BASE_URI", "/j2trp");
+		servletConfig.addInitParameter("PROXIED_PROTOCOL", "https");
+		servletConfig.addInitParameter("PROXIED_HOST", "my.revproxy.org");
+		servletConfig.addInitParameter("PROXIED_PORT", "4711");
 		reverseProxyServlet.init(servletConfig);
 		svcContainer.startServer();
 	}
@@ -49,6 +53,21 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		svcContainer.stopServer();
 	}
 
+	@Test
+	public void testRedirectedRequest() throws Exception {
+		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/redirect.html");
+		MockHttpServletResponse resp = new MockHttpServletResponse();
+		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
+				"reverseProxy", HttpServlet.class);
+		
+		req.addHeader("Accept", "*/*");
+		req.addHeader("User-Agent", "MockHttpServletRequest");
+		reverseProxyServlet.service(req, resp);
+		Assert.assertEquals(302, resp.getStatus());
+		Assert.assertEquals("https://my.revproxy.org:4711/j2trp", resp.getRedirectedUrl());
+	}
+
+	
 	@Test
 	public void testNormalRequestWithoutQueryString() throws Exception {
 		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/someFile.html");

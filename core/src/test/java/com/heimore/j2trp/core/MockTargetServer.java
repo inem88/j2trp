@@ -17,6 +17,8 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import org.springframework.web.servlet.view.RedirectView;
+
 @Path("/")
 public class MockTargetServer {
 	
@@ -37,8 +39,8 @@ public class MockTargetServer {
 	public Response executeRedirect (@Context Request req) throws IOException, URISyntaxException {
 		
 		System.out.println("Got here!");
-		ResponseBuilder builder = Response.temporaryRedirect(new URI("other_location.html"));
-//		builder.entity("<html><head><title>MockTargetServer</title></head><body><h1>It works " + (k1 != null && k2 != null ? "with" : "without") + " query strings!</h1></body></html>");
+		ResponseBuilder builder = Response.status(302);
+		builder.header("Location", new URI("other_location.html"));
 		return builder.build();
 	}
 	

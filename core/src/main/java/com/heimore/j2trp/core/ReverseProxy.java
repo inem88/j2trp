@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -27,6 +26,12 @@ public class ReverseProxy extends HttpServlet {
 	
 	private String targetHost;
 	private int targetPort;
+	private String baseUri;
+	private int proxiedPort;
+	private String proxiedHost;
+	private String proxiedProtocol;
+
+	
 	private static final long serialVersionUID = 1L;
 	private static final Charset ASCII = Charset.forName("US-ASCII");
 	private static final byte[] CR_LF = new byte[] { (byte) 0x0d, (byte) 0x0a };
@@ -91,6 +96,23 @@ public class ReverseProxy extends HttpServlet {
 	
 	static void crlf (OutputStream os) throws IOException {
 		os.write(CR_LF);
+	}
+	
+	static HttpStatus parseHeaders (String headersIncCrlf, Map<String, String> parsedHeaders) {
+		
+		String[] headers = headersIncCrlf.split("\\x0d\\x0a");
+		HttpStatus result = new HttpStatus(headers[0]);
+		for (int i = 1 ; i < headers.length; i++) {
+			String header = headers[i];
+			int indexOfHeaderSeparator = header.indexOf(": ");
+			if (indexOfHeaderSeparator == -1) {
+				LOG.debug(String.format("Header without valid syntax, discarding... (%s)", header));
+			}
+			else {
+				parsedHeaders.put(header.substring(0, indexOfHeaderSeparator), header.substring(indexOfHeaderSeparator + 2));
+			}
+		}
+		return result;
 	}
 	
 	public void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -175,14 +197,19 @@ public class ReverseProxy extends HttpServlet {
 				
 				
 				clientsRespOs.write(bodyBuffer, 0, bytesRead);
-				
 				bytesRead = proxiedInputSteam.read(bodyBuffer);
 			}
 			
-			System.out.println("---->" + new String(bufferedHeadersFromTarget.toByteArray(), 0, headerMarker, "ISO8859-1") + "<----");
+			String allHeaders = new String(bufferedHeadersFromTarget.toByteArray(), 0, headerMarker, "ISO8859-1");
+			System.out.println("---->" + allHeaders + "<----");
+			HttpStatus httpStatus = parseHeaders(allHeaders, headersFromTargetMap);
+			System.out.println(String.format("Target returned code %d (%s)", httpStatus.getCode(), httpStatus.getStatus()));
 			targetOutputStream.close();
 			clientsRespOs.close();
-		
+			response.setStatus(httpStatus.getCode());
+			if (httpStatus.getCode() == HttpServletResponse.SC_FOUND) {
+				response.sendRedirect(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + baseUri);
+			}
 		}
 		catch (IOException e) {
 			e.printStackTrace();
@@ -204,6 +231,11 @@ public class ReverseProxy extends HttpServlet {
 		super.init(config);
 		targetHost = config.getInitParameter("TARGET_HOST");
 		targetPort = Integer.parseInt(config.getInitParameter("TARGET_PORT"));
+		baseUri = config.getInitParameter("BASE_URI");
+		// TODO: Sensible defaults....
+		proxiedPort = Integer.parseInt(config.getInitParameter("PROXIED_PORT"));
+		proxiedHost = config.getInitParameter("PROXIED_HOST");
+		proxiedProtocol = config.getInitParameter("PROXIED_PROTOCOL");
 	}
 
 	
