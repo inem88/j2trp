@@ -40,7 +40,8 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		MockServletConfig servletConfig = new MockServletConfig();
 		servletConfig.addInitParameter("TARGET_HOST", "127.0.0.1");
 		servletConfig.addInitParameter("TARGET_PORT", "64000");
-		servletConfig.addInitParameter("BASE_URI", "/j2trp");
+		servletConfig.addInitParameter("TARGET_BASE_URI", "/sfibonusadmin");
+		servletConfig.addInitParameter("PROXIED_BASE_URI", "/j2trp");
 		servletConfig.addInitParameter("PROXIED_PROTOCOL", "https");
 		servletConfig.addInitParameter("PROXIED_HOST", "my.revproxy.org");
 		servletConfig.addInitParameter("PROXIED_PORT", "4711");

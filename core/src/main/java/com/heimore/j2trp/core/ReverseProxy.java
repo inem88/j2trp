@@ -4,11 +4,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpCookie;
 import java.net.Socket;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletConfig;
@@ -26,6 +29,7 @@ public class ReverseProxy extends HttpServlet {
 	
 	private String targetHost;
 	private int targetPort;
+	private String targetBaseUri;
 	private String baseUri;
 	private int proxiedPort;
 	private String proxiedHost;
@@ -52,6 +56,23 @@ public class ReverseProxy extends HttpServlet {
     		}
     		
     	}
+    }
+    
+    protected static void copyHeadersFromResponse (Map<String, String> headers, HttpServletResponse resp) throws IOException {
+    	for (Map.Entry<String, String> header : headers.entrySet()) {
+    		if (header.getKey().equalsIgnoreCase("Set-Cookie")) {
+    			// resp.addCookie(cookie)
+    		}
+    		resp.addHeader(header.getKey(), header.getValue());
+    	}
+    }
+    // EXA_LOGIN_URL_RETENTION_COOKIE=http%3A%2F%2Ftestproxy.skolverket.se%3A443%2F; Domain=.skolverket.se; Path=/
+    // JSESSIONID=C1A92D003ED13E1686389BC194E3F6FC; Path=/AuthenticationManager
+    protected static List<HttpCookie> parseCookies (String cookieHeader) {
+    	
+    	List<HttpCookie> cookies = HttpCookie.parse(cookieHeader);
+    	
+    	return cookies;
     }
     
     protected static void copyCookies (OutputStream ps, HttpServletRequest request) throws IOException {
@@ -208,6 +229,9 @@ public class ReverseProxy extends HttpServlet {
 			clientsRespOs.close();
 			response.setStatus(httpStatus.getCode());
 			if (httpStatus.getCode() == HttpServletResponse.SC_FOUND) {
+				URL redirectedUrl = new URL(headersFromTargetMap.get("Location"));
+				String targetPath = redirectedUrl.getPath();
+				// if (targetPath) // Gobble up the target base URI...
 				response.sendRedirect(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + baseUri);
 			}
 		}
@@ -231,7 +255,7 @@ public class ReverseProxy extends HttpServlet {
 		super.init(config);
 		targetHost = config.getInitParameter("TARGET_HOST");
 		targetPort = Integer.parseInt(config.getInitParameter("TARGET_PORT"));
-		baseUri = config.getInitParameter("BASE_URI");
+		baseUri = config.getInitParameter("PROXIED_BASE_URI");
 		// TODO: Sensible defaults....
 		proxiedPort = Integer.parseInt(config.getInitParameter("PROXIED_PORT"));
 		proxiedHost = config.getInitParameter("PROXIED_HOST");
