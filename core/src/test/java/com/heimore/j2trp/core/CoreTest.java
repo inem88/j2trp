@@ -80,9 +80,11 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		req.addHeader("User-Agent", "MockHttpServletRequest");
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
-		String[] splits = resp.getContentAsString().split("\\x0d\\x0a\\x0d\\x0a");
+		String contentAsString = resp.getContentAsString();
+//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
 //		System.out.println(splits[0]);
-		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works without query strings!</h1></body></html>", splits[1]);
+//		System.out.println(splits[1]);
+		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works without query strings!</h1></body></html>", contentAsString);
 		
 		
 	}
@@ -99,9 +101,11 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		req.setCookies(new Cookie("TEST_COOKIE", "MY_COOKIE"));
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
-		String[] splits = resp.getContentAsString().split("\\x0d\\x0a\\x0d\\x0a");
+		String contentAsString = resp.getContentAsString();
+//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
 //		System.out.println(splits[0]);
-		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with cookie: MY_COOKIE</h1></body></html>", splits[1]);
+//		System.out.println(splits[1]);
+		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with cookie: MY_COOKIE</h1></body></html>", contentAsString);
 		
 		
 	}
@@ -118,9 +122,11 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		req.setCookies(new Cookie("TEST_COOKIE", "MY_COOKIE"), new Cookie("TEST_COOKIE2", "MY_COOKIE2"));
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
-		String[] splits = resp.getContentAsString().split("\\x0d\\x0a\\x0d\\x0a");
+		String contentAsString = resp.getContentAsString();
+//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
 //		System.out.println(splits[0]);
-		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with cookie: MY_COOKIE:MY_COOKIE2</h1></body></html>", splits[1]);
+//		System.out.println(splits[1]);
+		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with cookie: MY_COOKIE:MY_COOKIE2</h1></body></html>", contentAsString);
 		
 		
 	}
@@ -137,9 +143,11 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		req.addHeader("User-Agent", "MockHttpServletRequest");
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
-		String[] splits = resp.getContentAsString().split("\\x0d\\x0a\\x0d\\x0a");
+		String contentAsString = resp.getContentAsString();
+//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
 //		System.out.println(splits[0]);
-		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with query strings!</h1></body></html>", splits[1]);
+//		System.out.println(splits[1]);
+		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with query strings!</h1></body></html>", contentAsString);
 		
 		
 	}
@@ -160,10 +168,11 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		req.addHeader("Content-Length", formData.length);
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
-		String[] splits = resp.getContentAsString().split("\\x0d\\x0a\\x0d\\x0a");
-		System.out.println(splits[0]);
-		System.out.println(splits[1]);
-		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body>joe:guessme</body></html>", splits[1]);
+		String contentAsString = resp.getContentAsString();
+//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
+//		System.out.println(splits[0]);
+//		System.out.println(splits[1]);
+		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body>joe:guessme</body></html>", contentAsString);
 		
 		
 	}

@@ -150,9 +150,10 @@ public class ReverseProxy extends HttpServlet {
 		Socket socket = null;
 		byte[] bodyBuffer = new byte[1024];
 		try {
+			// Connect to target.
 			socket = new Socket(targetHost, targetPort);
 			ByteArrayOutputStream headerBuffer = new ByteArrayOutputStream();
-			// PrintStream ps = new PrintStream(socket.getOutputStream());
+			// Build HTTP verb and request URI.
 			print(headerBuffer, request.getMethod());
 			print(headerBuffer, " ");
 			String requestUri = getProxiedUri(request.getRequestURI());
@@ -163,35 +164,45 @@ public class ReverseProxy extends HttpServlet {
 			}
 			print(headerBuffer, " HTTP/1.0");
 			crlf(headerBuffer);
+			// Ok, verb and request URI complete, proceed with the headers.
 			copyHeaders(headerBuffer, request);
 			copyCookies(headerBuffer, request);
+			// Add XFF header. TODO: Merge with pre-existing ones.
 			print(headerBuffer, "X-Forwarded-For: ");
 			print(headerBuffer, request.getRemoteAddr());
 			crlf(headerBuffer);
+			// Add proxied Host header.
 			print(headerBuffer, "Host: "); // Add port?
 			print(headerBuffer, targetHost);
+			// Special handling of known HTTP ports (basically ports other than 80 and 443)
 			if (!isWellKnownPort(targetPort)) {
 				print(headerBuffer, ":");
 				print(headerBuffer, String.valueOf(targetPort));
 			}
+			// Ok, end header with two CRLFs
 			crlf(headerBuffer);
 			crlf(headerBuffer);
+			// Header now complete.
 			
+			ByteArrayOutputStream httpBodyBuffer = new ByteArrayOutputStream();
 			// If request is a POST, relay the body of the request.
 			if (request.getMethod().equals("POST")) {
 				InputStream is = request.getInputStream();
 				int bytesRead = is.read(bodyBuffer);
 				while (bytesRead != -1) {
-					headerBuffer.write(bodyBuffer, 0, bytesRead);
+					httpBodyBuffer.write(bodyBuffer, 0, bytesRead);
 					bytesRead = is.read(bodyBuffer);
 				}
 			}
 			
 			// Write output to target server.
 			OutputStream targetOutputStream = socket.getOutputStream();
-			byte[] output = headerBuffer.toByteArray();
-			System.out.println(new String(output, ASCII));
-			targetOutputStream.write(output);
+			byte[] headerBufferAsBytes = headerBuffer.toByteArray();
+			byte[] httpBodyBufferAsBytes = httpBodyBuffer.toByteArray();
+			System.out.println("Header to target: " + new String(headerBufferAsBytes, ASCII));
+			System.out.println("Body to target: " + new String(httpBodyBufferAsBytes, ASCII));
+			targetOutputStream.write(headerBufferAsBytes);
+			targetOutputStream.write(httpBodyBufferAsBytes);
 			targetOutputStream.flush();
 
 			// Read response from target server.
@@ -199,58 +210,71 @@ public class ReverseProxy extends HttpServlet {
 			OutputStream clientsRespOs = response.getOutputStream();
 			ByteArrayOutputStream bufferedHeadersFromTarget = new ByteArrayOutputStream();
 			int bytesRead = proxiedInputSteam.read(bodyBuffer);
+			// META-DATA
 			int markerIndex = 0;
 			int totalBytesRead = 0;
 			boolean headerFound = false;
-			int headerMarker = 0;
+			int bodyMarker = 0;
 			Map<String, String> headersFromTargetMap = new HashMap<String, String>();
-					
+			HttpStatus httpStatus = null;		
+			
 			while (bytesRead != -1) {
 				
 				totalBytesRead += bytesRead;
-				if (!headerFound) {
-					bufferedHeadersFromTarget.write(bodyBuffer, 0, bytesRead);
-				}
+				
 				// Scan for header marker...
 				for (int i = 0; !headerFound && i < bytesRead; i++) {
 					if (bodyBuffer[i] == HEADER_END_MARKER[markerIndex++]) {
 						if (markerIndex == 4) {
 							// Found marker?
 							System.out.println("Found it @ " + (totalBytesRead - bytesRead + i));
-							markerIndex = 0;
 							headerFound = true;
-							headerMarker = totalBytesRead - bytesRead + i - 3;
+							bufferedHeadersFromTarget.write(bodyBuffer, 0, i);
+							
+							String allHeaders = new String(bufferedHeadersFromTarget.toByteArray(), 0, bufferedHeadersFromTarget.size() - 3, "ISO8859-1");
+							System.out.println("---->" + allHeaders + "<----");
+							httpStatus = parseHeaders(allHeaders, headersFromTargetMap);
+							System.out.println(String.format("Target returned code %d (%s)", httpStatus.getCode(), httpStatus.getStatus()));
+							bodyMarker = i + 1;
 						}
 					}
 					else {
 						markerIndex = 0;
 					}
 				}
+				// No header market found yet, copy all bytes to the header buffer.
+				if (!headerFound) {
+					bufferedHeadersFromTarget.write(bodyBuffer, 0, bytesRead);
+				}
 				
-				
-				clientsRespOs.write(bodyBuffer, 0, bytesRead);
+				// Ok, any manipulation of the header should occur BEFORE the body...
+				if (headerFound) {
+					
+					response.setStatus(httpStatus.getCode());
+					if (httpStatus.getCode() == HttpServletResponse.SC_FOUND) {
+						URL redirectedUrl = new URL(headersFromTargetMap.get("Location"));
+						String targetPath = redirectedUrl.getFile();
+						String translatedPath = targetPath;
+						if (targetPath.startsWith(targetBaseUri)) {
+							StringBuilder sb = new StringBuilder(targetPath);
+							sb.delete(0, targetBaseUri.length());
+							sb.insert(0, baseUri);
+							translatedPath = sb.toString();
+						}
+						response.sendRedirect(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + translatedPath);
+					}
+					
+					clientsRespOs.write(bodyBuffer, bodyMarker, bytesRead - bodyMarker);
+					bodyMarker = 0;
+					
+				}
 				bytesRead = proxiedInputSteam.read(bodyBuffer);
 			}
 			
-			String allHeaders = new String(bufferedHeadersFromTarget.toByteArray(), 0, headerMarker, "ISO8859-1");
-			System.out.println("---->" + allHeaders + "<----");
-			HttpStatus httpStatus = parseHeaders(allHeaders, headersFromTargetMap);
-			System.out.println(String.format("Target returned code %d (%s)", httpStatus.getCode(), httpStatus.getStatus()));
+			
 			targetOutputStream.close();
 			clientsRespOs.close();
-			response.setStatus(httpStatus.getCode());
-			if (httpStatus.getCode() == HttpServletResponse.SC_FOUND) {
-				URL redirectedUrl = new URL(headersFromTargetMap.get("Location"));
-				String targetPath = redirectedUrl.getFile();
-				String translatedPath = targetPath;
-				if (targetPath.startsWith(targetBaseUri)) {
-					StringBuilder sb = new StringBuilder(targetPath);
-					sb.delete(0, targetBaseUri.length());
-					sb.insert(0, baseUri);
-					translatedPath = sb.toString();
-				}
-				response.sendRedirect(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + translatedPath);
-			}
+			
 		}
 		catch (IOException e) {
 			e.printStackTrace();
