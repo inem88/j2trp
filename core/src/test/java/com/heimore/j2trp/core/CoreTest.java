@@ -56,7 +56,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 
 	@Test
 	public void testRedirectedRequest() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/redirect.html");
+		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/redirect.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
@@ -65,13 +65,13 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		req.addHeader("User-Agent", "MockHttpServletRequest");
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(302, resp.getStatus());
-		Assert.assertEquals("https://my.revproxy.org:4711/j2trp", resp.getRedirectedUrl());
+		Assert.assertEquals("https://my.revproxy.org:4711/j2trp/other_location.html?q1=v1", resp.getRedirectedUrl());
 	}
 
 	
 	@Test
 	public void testNormalRequestWithoutQueryString() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/someFile.html");
+		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/someFile.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
@@ -89,7 +89,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test
 	public void testNormalRequestWithCookie() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/someFileWithCookie.html");
+		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/someFileWithCookie.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
@@ -108,7 +108,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test
 	public void testNormalRequestWithCookies() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/someFileWithCookie.html");
+		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/someFileWithCookie.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
@@ -127,7 +127,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test(enabled = true)
 	public void testNormalRequestWithQueryString() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/sfibonusadmin/someFile.html");
+		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/someFile.html");
 		req.setQueryString("k1=v1&k2=v2");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
@@ -146,7 +146,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test(enabled = true)
 	public void testNormalPost() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("POST", "/sfibonusadmin/someFile.html");
+		MockHttpServletRequest req = new MockHttpServletRequest("POST", "/j2trp/someFile.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);

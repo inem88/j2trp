@@ -136,6 +136,16 @@ public class ReverseProxy extends HttpServlet {
 		return result;
 	}
 	
+	String getProxiedUri (String srcUri) {
+		if (srcUri.startsWith(baseUri)) {
+			StringBuilder sb = new StringBuilder(srcUri);
+			sb.delete(0, baseUri.length());
+			sb.insert(0, targetBaseUri);
+			return sb.toString();
+		}
+		return srcUri;
+	}
+	
 	public void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		Socket socket = null;
 		byte[] bodyBuffer = new byte[1024];
@@ -145,7 +155,8 @@ public class ReverseProxy extends HttpServlet {
 			// PrintStream ps = new PrintStream(socket.getOutputStream());
 			print(headerBuffer, request.getMethod());
 			print(headerBuffer, " ");
-			print(headerBuffer, request.getRequestURI());
+			String requestUri = getProxiedUri(request.getRequestURI());
+			print(headerBuffer, requestUri);
 			if (request.getQueryString() != null) {
 				print(headerBuffer, "?");
 				print(headerBuffer, request.getQueryString());
@@ -230,9 +241,15 @@ public class ReverseProxy extends HttpServlet {
 			response.setStatus(httpStatus.getCode());
 			if (httpStatus.getCode() == HttpServletResponse.SC_FOUND) {
 				URL redirectedUrl = new URL(headersFromTargetMap.get("Location"));
-				String targetPath = redirectedUrl.getPath();
-				// if (targetPath) // Gobble up the target base URI...
-				response.sendRedirect(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + baseUri);
+				String targetPath = redirectedUrl.getFile();
+				String translatedPath = targetPath;
+				if (targetPath.startsWith(targetBaseUri)) {
+					StringBuilder sb = new StringBuilder(targetPath);
+					sb.delete(0, targetBaseUri.length());
+					sb.insert(0, baseUri);
+					translatedPath = sb.toString();
+				}
+				response.sendRedirect(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + translatedPath);
 			}
 		}
 		catch (IOException e) {
@@ -258,6 +275,7 @@ public class ReverseProxy extends HttpServlet {
 		baseUri = config.getInitParameter("PROXIED_BASE_URI");
 		// TODO: Sensible defaults....
 		proxiedPort = Integer.parseInt(config.getInitParameter("PROXIED_PORT"));
+		targetBaseUri = config.getInitParameter("TARGET_BASE_URI");
 		proxiedHost = config.getInitParameter("PROXIED_HOST");
 		proxiedProtocol = config.getInitParameter("PROXIED_PROTOCOL");
 	}

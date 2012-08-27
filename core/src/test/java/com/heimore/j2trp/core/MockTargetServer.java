@@ -40,7 +40,7 @@ public class MockTargetServer {
 		
 		System.out.println("Got here!");
 		ResponseBuilder builder = Response.status(302);
-		builder.header("Location", new URI("other_location.html"));
+		builder.header("Location", new URI("other_location.html?q1=v1"));
 		return builder.build();
 	}
 	
