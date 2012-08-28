@@ -52,7 +52,7 @@ public class MockTargetServer {
 		
 		System.out.println("Got here with cookie: " + cookie);
 		ResponseBuilder builder = Response.ok();
-		NewCookie simpleCookie = new NewCookie("SIMPLE", "COOKIE");
+		NewCookie simpleCookie = new NewCookie("SIMPLE", "COOKIE", null, null, 0, null, -1, false);
 		NewCookie domainCookie = new NewCookie("COMPLETE", "VALUE2", "/sfibonusadmin", ".example.org", "Some comment.", 0, true);
 		builder.cookie(simpleCookie, domainCookie);
 		String responseMessage = cookie + (cookie2 != null ? ":" + cookie2 : "");
