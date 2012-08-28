@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.net.Socket;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +15,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -54,6 +56,9 @@ public class ReverseProxy extends HttpServlet {
         			print(ps, headerValues.nextElement());
         			crlf(ps);
         		}
+    		}
+    		if (headerName.equalsIgnoreCase("X-Forwarded-For")) {
+    			
     		}
     		
     	}
@@ -199,10 +204,28 @@ public class ReverseProxy extends HttpServlet {
 	
 	public void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		Socket socket = null;
-		byte[] bodyBuffer = new byte[1024];
+		byte[] byteBuffer = new byte[1024];
 		try {
 			// Connect to target.
-			socket = new Socket(targetHost, targetPort);
+			try {
+			 socket = new Socket(targetHost, targetPort);
+			}
+			catch (UnknownHostException e) {
+				String errorCode = UUID.randomUUID().toString();
+				String msg = String.format("Target server not reachable, your personal error code is %s, please contact support and provide this error code.", errorCode);
+				String logMsg = String.format("Generated error code %s", errorCode);
+				LOG.error(logMsg, e);
+				response.sendError(HttpServletResponse.SC_BAD_GATEWAY, msg);
+				return;
+			}
+			catch (IOException e) {
+				String errorCode = UUID.randomUUID().toString();
+				String msg = String.format("I/O error to the target, your personal error code is %s, please contact support and provide this error code.", errorCode);
+				String logMsg = String.format("Generated error code %s", errorCode);
+				LOG.error(logMsg, e);
+				response.sendError(HttpServletResponse.SC_BAD_GATEWAY, msg);
+				return;
+			}
 			ByteArrayOutputStream headerBuffer = new ByteArrayOutputStream();
 			// Build HTTP verb and request URI.
 			print(headerBuffer, request.getMethod());
@@ -239,10 +262,10 @@ public class ReverseProxy extends HttpServlet {
 			// If request is a POST, relay the body of the request.
 			if (request.getMethod().equals("POST")) {
 				InputStream is = request.getInputStream();
-				int bytesRead = is.read(bodyBuffer);
+				int bytesRead = is.read(byteBuffer);
 				while (bytesRead != -1) {
-					httpBodyBuffer.write(bodyBuffer, 0, bytesRead);
-					bytesRead = is.read(bodyBuffer);
+					httpBodyBuffer.write(byteBuffer, 0, bytesRead);
+					bytesRead = is.read(byteBuffer);
 				}
 			}
 			
@@ -261,7 +284,7 @@ public class ReverseProxy extends HttpServlet {
 			InputStream proxiedInputSteam = socket.getInputStream();
 			OutputStream clientsRespOs = response.getOutputStream();
 			ByteArrayOutputStream bufferedHeadersFromTarget = new ByteArrayOutputStream();
-			int bytesRead = proxiedInputSteam.read(bodyBuffer);
+			int bytesRead = proxiedInputSteam.read(byteBuffer);
 			// META-DATA
 			int markerIndex = 0;
 			boolean headerFound = false;
@@ -269,16 +292,17 @@ public class ReverseProxy extends HttpServlet {
 			Map<String, List<String>> headersFromTargetMap = new HashMap<String, List<String>>();
 			HttpStatus httpStatus = null;	
 			boolean headerAlreadyWritten = false;
+			String redirectUrl = "";
 			
 			while (bytesRead != -1) {
 				
 				// Scan for header marker...
 				for (int i = 0; !headerFound && i < bytesRead; i++) {
-					if (bodyBuffer[i] == HEADER_END_MARKER[markerIndex++]) {
+					if (byteBuffer[i] == HEADER_END_MARKER[markerIndex++]) {
 						if (markerIndex == 4) {
 							// Found marker?
 							headerFound = true;
-							bufferedHeadersFromTarget.write(bodyBuffer, 0, i);
+							bufferedHeadersFromTarget.write(byteBuffer, 0, i);
 							
 							String allHeaders = new String(bufferedHeadersFromTarget.toByteArray(), 0, bufferedHeadersFromTarget.size() - 3, "ISO8859-1");
 							System.out.println("---->" + allHeaders + "<----");
@@ -291,9 +315,9 @@ public class ReverseProxy extends HttpServlet {
 						markerIndex = 0;
 					}
 				}
-				// No header market found yet, copy all bytes to the header buffer.
+				// No header marker found yet, copy all bytes to the header buffer.
 				if (!headerFound) {
-					bufferedHeadersFromTarget.write(bodyBuffer, 0, bytesRead);
+					bufferedHeadersFromTarget.write(byteBuffer, 0, bytesRead);
 				}
 				
 				// Ok, any manipulation of the header should occur BEFORE the body...
@@ -311,23 +335,32 @@ public class ReverseProxy extends HttpServlet {
 								sb.insert(0, baseUri);
 								translatedPath = sb.toString();
 							}
-							response.sendRedirect(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + translatedPath);
+							redirectUrl = response.encodeRedirectURL(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + translatedPath);
+							response.sendRedirect(redirectUrl);
 						}
 						headerAlreadyWritten = true;
 					}
-					clientsRespOs.write(bodyBuffer, bodyMarker, bytesRead - bodyMarker);
+					clientsRespOs.write(byteBuffer, bodyMarker, bytesRead - bodyMarker);
 					bodyMarker = 0;
 				}
-				bytesRead = proxiedInputSteam.read(bodyBuffer);
+				bytesRead = proxiedInputSteam.read(byteBuffer);
 			}
 			
-			
+			if (LOG.isDebugEnabled()) {
+				LOG.debug(String.format("Proxied request \"%s\" -> \"%s\" (%d) \"%s\"", request.getRequestURI(), requestUri, httpStatus.getCode(), redirectUrl)); 
+			}
+					
 			targetOutputStream.close(); // TODO: Handle keep-alives.
 			clientsRespOs.close();
 			
 		}
 		catch (IOException e) {
-			e.printStackTrace();
+			String errorCode = UUID.randomUUID().toString();
+			String msg = String.format("Error while handling I/O to the target server, your personal error code is %s, please contact support and provide this error code.", errorCode);
+			String logMsg = String.format("Generated error code %s", errorCode);
+			LOG.error(logMsg, e);
+			response.sendError(HttpServletResponse.SC_BAD_GATEWAY, msg);
+			return;
 		}
 		finally {
 			if (socket != null) {
@@ -354,5 +387,6 @@ public class ReverseProxy extends HttpServlet {
 		proxiedProtocol = config.getInitParameter("PROXIED_PROTOCOL");
 	}
 
+	
 	
 }
