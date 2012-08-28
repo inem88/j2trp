@@ -78,11 +78,12 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		
 		req.addHeader("Accept", "*/*");
 		req.addHeader("User-Agent", "MockHttpServletRequest");
+		req.addHeader("X-Forwarded-For", "someOtherProxy");
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
 		String contentAsString = resp.getContentAsString();
 		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works without query strings!</h1></body></html>", contentAsString);
-		
+		Assert.assertEquals("someOtherProxy, 127.0.0.1", resp.getHeader("X-Forwarded-For"));
 		
 	}
 	

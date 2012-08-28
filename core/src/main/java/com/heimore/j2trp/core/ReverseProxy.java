@@ -47,8 +47,16 @@ public class ReverseProxy extends HttpServlet {
 	
     @SuppressWarnings("unchecked")
     protected static void copyHeaders (OutputStream ps, HttpServletRequest request) throws IOException {
+    	
+    	boolean foundXFFHeaders = false;
+    	final String XFF = "X-Forwarded-For";
+    	
     	for (Enumeration<String> headers = request.getHeaderNames(); headers.hasMoreElements(); ) {
     		String headerName = (String) headers.nextElement();
+    		if (headerName.equalsIgnoreCase(XFF)) {
+    			foundXFFHeaders = true;
+    			continue;
+    		}
     		if (!headerName.equalsIgnoreCase("Host")) {
         		for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements(); ) {
         			print(ps, headerName);
@@ -57,11 +65,20 @@ public class ReverseProxy extends HttpServlet {
         			crlf(ps);
         		}
     		}
-    		if (headerName.equalsIgnoreCase("X-Forwarded-For")) {
-    			
-    		}
+    		
     		
     	}
+    	
+    	print(ps, XFF);
+    	print(ps, ": ");
+    	if (foundXFFHeaders) {
+    		for (Enumeration<String> headerValues = request.getHeaders(XFF); headerValues.hasMoreElements(); ) {
+    			print(ps, headerValues.nextElement());
+    			print(ps, ", ");
+    		}
+    	}
+    	print(ps, request.getRemoteAddr());
+    	crlf(ps);
     }
     
     protected static List<Cookie> convertCookies (List<HttpCookie> cookies, String targetBaseUri, String baseUri) {
@@ -241,10 +258,10 @@ public class ReverseProxy extends HttpServlet {
 			// Ok, verb and request URI complete, proceed with the headers.
 			copyHeaders(headerBuffer, request);
 			copyCookies(headerBuffer, request);
-			// Add XFF header. TODO: Merge with pre-existing ones.
-			print(headerBuffer, "X-Forwarded-For: ");
-			print(headerBuffer, request.getRemoteAddr());
-			crlf(headerBuffer);
+//			// Add XFF header. TODO: Merge with pre-existing ones.
+//			print(headerBuffer, "X-Forwarded-For: ");
+//			print(headerBuffer, request.getRemoteAddr());
+//			crlf(headerBuffer);
 			// Add proxied Host header.
 			print(headerBuffer, "Host: "); // Add port?
 			print(headerBuffer, targetHost);

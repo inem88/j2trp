@@ -8,6 +8,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -26,10 +27,11 @@ public class MockTargetServer {
 	@GET
 	@Produces("text/html")
 	@Path("/someFile.html")
-	public Response executeGet (@Context Request req, @QueryParam("k1") String k1, @QueryParam("k2") String k2) throws IOException {
+	public Response executeGet (@Context Request req, @HeaderParam("X-Forwarded-For") String xff, @QueryParam("k1") String k1, @QueryParam("k2") String k2) throws IOException {
 		
 		System.out.println("Got here!");
 		ResponseBuilder builder = Response.ok();
+		builder.header("X-Forwarded-For", xff);
 		builder.entity("<html><head><title>MockTargetServer</title></head><body><h1>It works " + (k1 != null && k2 != null ? "with" : "without") + " query strings!</h1></body></html>");
 		return builder.build();
 	}
