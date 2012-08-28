@@ -13,6 +13,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
@@ -51,6 +52,9 @@ public class MockTargetServer {
 		
 		System.out.println("Got here with cookie: " + cookie);
 		ResponseBuilder builder = Response.ok();
+		NewCookie simpleCookie = new NewCookie("SIMPLE", "COOKIE");
+		NewCookie domainCookie = new NewCookie("COMPLETE", "VALUE2", "/sfibonusadmin", ".example.org", "Some comment.", 0, true);
+		builder.cookie(simpleCookie, domainCookie);
 		String responseMessage = cookie + (cookie2 != null ? ":" + cookie2 : "");
 		builder.entity("<html><head><title>MockTargetServer</title></head><body><h1>It works with cookie: " + responseMessage + "</h1></body></html>");
 		return builder.build();

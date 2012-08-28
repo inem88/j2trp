@@ -81,9 +81,6 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
 		String contentAsString = resp.getContentAsString();
-//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
-//		System.out.println(splits[0]);
-//		System.out.println(splits[1]);
 		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works without query strings!</h1></body></html>", contentAsString);
 		
 		
@@ -102,11 +99,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
 		String contentAsString = resp.getContentAsString();
-//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
-//		System.out.println(splits[0]);
-//		System.out.println(splits[1]);
 		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with cookie: MY_COOKIE</h1></body></html>", contentAsString);
-		
 		
 	}
 	
@@ -123,12 +116,19 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
 		String contentAsString = resp.getContentAsString();
-//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
-//		System.out.println(splits[0]);
-//		System.out.println(splits[1]);
 		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with cookie: MY_COOKIE:MY_COOKIE2</h1></body></html>", contentAsString);
-		
-		
+		Cookie simpleCookie = resp.getCookie("SIMPLE");
+		Cookie completeCookie = resp.getCookie("COMPLETE");
+		Assert.assertNotNull(simpleCookie);
+		Assert.assertEquals("COOKIE", simpleCookie.getValue());
+		Assert.assertNotNull(completeCookie);
+		Assert.assertEquals("VALUE2", completeCookie.getValue());
+		Assert.assertEquals("Some comment.", completeCookie.getComment());
+		Assert.assertEquals(".example.org", completeCookie.getDomain());
+		Assert.assertEquals(0, completeCookie.getMaxAge());
+		Assert.assertEquals("/j2trp", completeCookie.getPath());
+		Assert.assertEquals(true, completeCookie.getSecure());
+		Assert.assertEquals(1, completeCookie.getVersion());
 	}
 	
 	@Test(enabled = true)
@@ -144,9 +144,6 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
 		String contentAsString = resp.getContentAsString();
-//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
-//		System.out.println(splits[0]);
-//		System.out.println(splits[1]);
 		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with query strings!</h1></body></html>", contentAsString);
 		
 		
@@ -169,9 +166,6 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
 		String contentAsString = resp.getContentAsString();
-//		String[] splits = contentAsString.split("\\x0d\\x0a\\x0d\\x0a");
-//		System.out.println(splits[0]);
-//		System.out.println(splits[1]);
 		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body>joe:guessme</body></html>", contentAsString);
 		
 		

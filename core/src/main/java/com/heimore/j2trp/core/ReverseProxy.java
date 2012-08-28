@@ -8,6 +8,7 @@ import java.net.HttpCookie;
 import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -58,23 +59,67 @@ public class ReverseProxy extends HttpServlet {
     	}
     }
     
-    protected static void copyHeadersFromResponse (Map<String, String> headers, HttpServletResponse resp) throws IOException {
-    	for (Map.Entry<String, String> header : headers.entrySet()) {
-    		if (header.getKey().equalsIgnoreCase("Set-Cookie")) {
-    			// resp.addCookie(cookie)
+    protected static List<Cookie> convertCookies (List<HttpCookie> cookies, String targetBaseUri, String baseUri) {
+    	
+    	List<Cookie> result = new ArrayList<Cookie>(cookies.size());
+    	
+    	for (HttpCookie cookie : cookies) {
+    		
+    		Cookie convertedCookie = new Cookie(cookie.getName(), cookie.getValue());
+    		convertedCookie.setComment(cookie.getComment());
+    		if (cookie.getDomain() != null) {
+    			convertedCookie.setDomain(cookie.getDomain());
     		}
-    		resp.addHeader(header.getKey(), header.getValue());
+    		convertedCookie.setMaxAge((int) cookie.getMaxAge());
+    		String cookiePath = cookie.getPath();
+    		if (cookiePath != null && cookiePath.startsWith(targetBaseUri)) {
+    			StringBuilder sb = new StringBuilder(cookiePath);
+    			sb.delete(0, cookiePath.length());
+    			sb.insert(0, baseUri);
+    			cookiePath = sb.toString();
+    		}
+    		convertedCookie.setPath(cookiePath);
+    		convertedCookie.setSecure(cookie.getSecure());
+    		convertedCookie.setVersion(cookie.getVersion());
+    		result.add(convertedCookie);
     	}
-    }
-    // EXA_LOGIN_URL_RETENTION_COOKIE=http%3A%2F%2Ftestproxy.skolverket.se%3A443%2F; Domain=.skolverket.se; Path=/
-    // JSESSIONID=C1A92D003ED13E1686389BC194E3F6FC; Path=/AuthenticationManager
-    protected static List<HttpCookie> parseCookies (String cookieHeader) {
     	
-    	List<HttpCookie> cookies = HttpCookie.parse(cookieHeader);
-    	
-    	return cookies;
+    	return result;
     }
     
+    protected static void copyCookiesFromResponse (List<String> rawCookieValues, HttpServletResponse resp, String targetBaseUri, String baseUri) {
+    	List<HttpCookie> allCookies = new ArrayList<HttpCookie>();
+    	for (String rawCookie : rawCookieValues) {
+    		allCookies.addAll(HttpCookie.parse(rawCookie));
+    	}
+    	
+    	for (Cookie cookie : convertCookies(allCookies, targetBaseUri, baseUri)) {
+    		resp.addCookie(cookie);
+    	}
+    	
+    }
+    
+    protected static void copyHeadersFromResponse (Map<String, List<String>> headers, HttpServletResponse resp, String targetBaseUri, String baseUri) throws IOException {
+    	for (Map.Entry<String, List<String>> header : headers.entrySet()) {
+    		if (header.getKey().equalsIgnoreCase("Set-Cookie")) {
+    			copyCookiesFromResponse(header.getValue(), resp, targetBaseUri, baseUri);
+    			continue;
+    		}
+    		if (header.getKey().equalsIgnoreCase("Set-Cookie2")) {
+    			copyCookiesFromResponse(header.getValue(), resp, targetBaseUri, baseUri);
+    			continue;
+    		}
+    		if (header.getKey().equalsIgnoreCase("Location")) {
+    			System.out.println("Suppressing copying of Location header.");
+    			continue;
+    		}
+    		for (String value : header.getValue()) {
+    			resp.addHeader(header.getKey(), value);
+    		}
+    		
+    	}
+    }
+
     protected static void copyCookies (OutputStream ps, HttpServletRequest request) throws IOException {
     	Cookie[] cookies = request.getCookies();
     	
@@ -119,7 +164,7 @@ public class ReverseProxy extends HttpServlet {
 		os.write(CR_LF);
 	}
 	
-	static HttpStatus parseHeaders (String headersIncCrlf, Map<String, String> parsedHeaders) {
+	static HttpStatus parseHeaders (String headersIncCrlf, Map<String, List<String>> parsedHeaders) {
 		
 		String[] headers = headersIncCrlf.split("\\x0d\\x0a");
 		HttpStatus result = new HttpStatus(headers[0]);
@@ -130,7 +175,13 @@ public class ReverseProxy extends HttpServlet {
 				LOG.debug(String.format("Header without valid syntax, discarding... (%s)", header));
 			}
 			else {
-				parsedHeaders.put(header.substring(0, indexOfHeaderSeparator), header.substring(indexOfHeaderSeparator + 2));
+				String headerKey = header.substring(0, indexOfHeaderSeparator);
+				List<String> headerValue = parsedHeaders.get(headerKey);
+				if (headerValue == null) {
+					headerValue = new ArrayList<String>();
+					parsedHeaders.put(headerKey, headerValue);
+				}
+				headerValue.add(header.substring(indexOfHeaderSeparator + 2));
 			}
 		}
 		return result;
@@ -204,6 +255,7 @@ public class ReverseProxy extends HttpServlet {
 			targetOutputStream.write(headerBufferAsBytes);
 			targetOutputStream.write(httpBodyBufferAsBytes);
 			targetOutputStream.flush();
+			// Ok, done with pushing out data to the target server.
 
 			// Read response from target server.
 			InputStream proxiedInputSteam = socket.getInputStream();
@@ -212,22 +264,19 @@ public class ReverseProxy extends HttpServlet {
 			int bytesRead = proxiedInputSteam.read(bodyBuffer);
 			// META-DATA
 			int markerIndex = 0;
-			int totalBytesRead = 0;
 			boolean headerFound = false;
 			int bodyMarker = 0;
-			Map<String, String> headersFromTargetMap = new HashMap<String, String>();
-			HttpStatus httpStatus = null;		
+			Map<String, List<String>> headersFromTargetMap = new HashMap<String, List<String>>();
+			HttpStatus httpStatus = null;	
+			boolean headerAlreadyWritten = false;
 			
 			while (bytesRead != -1) {
-				
-				totalBytesRead += bytesRead;
 				
 				// Scan for header marker...
 				for (int i = 0; !headerFound && i < bytesRead; i++) {
 					if (bodyBuffer[i] == HEADER_END_MARKER[markerIndex++]) {
 						if (markerIndex == 4) {
 							// Found marker?
-							System.out.println("Found it @ " + (totalBytesRead - bytesRead + i));
 							headerFound = true;
 							bufferedHeadersFromTarget.write(bodyBuffer, 0, i);
 							
@@ -249,30 +298,31 @@ public class ReverseProxy extends HttpServlet {
 				
 				// Ok, any manipulation of the header should occur BEFORE the body...
 				if (headerFound) {
-					
-					response.setStatus(httpStatus.getCode());
-					if (httpStatus.getCode() == HttpServletResponse.SC_FOUND) {
-						URL redirectedUrl = new URL(headersFromTargetMap.get("Location"));
-						String targetPath = redirectedUrl.getFile();
-						String translatedPath = targetPath;
-						if (targetPath.startsWith(targetBaseUri)) {
-							StringBuilder sb = new StringBuilder(targetPath);
-							sb.delete(0, targetBaseUri.length());
-							sb.insert(0, baseUri);
-							translatedPath = sb.toString();
+					if (!headerAlreadyWritten) {
+						response.setStatus(httpStatus.getCode());
+						copyHeadersFromResponse(headersFromTargetMap, response, targetBaseUri, baseUri);
+						if (httpStatus.getCode() == HttpServletResponse.SC_FOUND) {
+							URL redirectedUrl = new URL(headersFromTargetMap.get("Location").get(0));
+							String targetPath = redirectedUrl.getFile();
+							String translatedPath = targetPath;
+							if (targetPath.startsWith(targetBaseUri)) {
+								StringBuilder sb = new StringBuilder(targetPath);
+								sb.delete(0, targetBaseUri.length());
+								sb.insert(0, baseUri);
+								translatedPath = sb.toString();
+							}
+							response.sendRedirect(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + translatedPath);
 						}
-						response.sendRedirect(proxiedProtocol + "://" + proxiedHost + ":" + proxiedPort + translatedPath);
+						headerAlreadyWritten = true;
 					}
-					
 					clientsRespOs.write(bodyBuffer, bodyMarker, bytesRead - bodyMarker);
 					bodyMarker = 0;
-					
 				}
 				bytesRead = proxiedInputSteam.read(bodyBuffer);
 			}
 			
 			
-			targetOutputStream.close();
+			targetOutputStream.close(); // TODO: Handle keep-alives.
 			clientsRespOs.close();
 			
 		}
