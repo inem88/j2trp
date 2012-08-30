@@ -29,6 +29,7 @@ import org.apache.log4j.Logger;
 public class ReverseProxy extends HttpServlet {
 	
 	private static final Logger LOG = Logger.getLogger(ReverseProxy.class);
+	private static final String LS = System.getProperty("line.separator");
 	
 	private String targetHost;
 	private int targetPort;
@@ -44,6 +45,7 @@ public class ReverseProxy extends HttpServlet {
 	private static final byte[] CR_LF = new byte[] { (byte) 0x0d, (byte) 0x0a };
 	private static final int[] WELL_KNOWN_PORT = new int[] { 80, 443 }; // Array must be sorted.
 	private static final byte[] HEADER_END_MARKER = new byte[] { (byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a };
+	private static final String HTTP_VERB = "HTTP VERB";
 	
     @SuppressWarnings("unchecked")
     protected static void copyHeaders (OutputStream ps, HttpServletRequest request) throws IOException {
@@ -59,9 +61,12 @@ public class ReverseProxy extends HttpServlet {
     		}
     		if (!headerName.equalsIgnoreCase("Host")) {
         		for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements(); ) {
-        			print(ps, headerName);
-        			print(ps, ": ");
-        			print(ps, headerValues.nextElement());
+        			StringBuilder headerBuffer = new StringBuilder();
+        			headerBuffer.append(headerName);
+        			headerBuffer.append(": ");
+        			String headerValue = headerValues.nextElement();
+        			headerBuffer.append(headerValue);
+        			print(ps, headerBuffer.toString());
         			crlf(ps);
         		}
     		}
@@ -186,6 +191,15 @@ public class ReverseProxy extends HttpServlet {
 		os.write(CR_LF);
 	}
 	
+	static void addHeader (Map<String, List<String>> map, String key, String value) {
+		List<String> headerValue = map.get(key);
+		if (headerValue == null) {
+			headerValue = new ArrayList<String>();
+			map.put(key, headerValue);
+		}
+		headerValue.add(value);
+	}
+	
 	static HttpStatus parseHeaders (String headersIncCrlf, Map<String, List<String>> parsedHeaders) {
 		
 		String[] headers = headersIncCrlf.split("\\x0d\\x0a");
@@ -198,12 +212,7 @@ public class ReverseProxy extends HttpServlet {
 			}
 			else {
 				String headerKey = header.substring(0, indexOfHeaderSeparator);
-				List<String> headerValue = parsedHeaders.get(headerKey);
-				if (headerValue == null) {
-					headerValue = new ArrayList<String>();
-					parsedHeaders.put(headerKey, headerValue);
-				}
-				headerValue.add(header.substring(indexOfHeaderSeparator + 2));
+				addHeader(parsedHeaders, headerKey, header.substring(indexOfHeaderSeparator + 2));
 			}
 		}
 		return result;
@@ -217,6 +226,26 @@ public class ReverseProxy extends HttpServlet {
 			return sb.toString();
 		}
 		return srcUri;
+	}
+	
+	private static String dumpEnumeration (Enumeration<String> bag) {
+		StringBuilder sb = new StringBuilder();
+		
+		int nrOfElements = 0;
+		while (bag.hasMoreElements()) {
+			sb.append(bag.nextElement());
+			if (bag.hasMoreElements()) {
+				sb.append(", ");
+			}
+			nrOfElements++;
+		}
+		
+		if (nrOfElements > 1) {
+			sb.insert(0, "[");
+			sb.append("]");
+		}
+		
+		return sb.toString();
 	}
 	
 	public void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -245,23 +274,21 @@ public class ReverseProxy extends HttpServlet {
 			}
 			ByteArrayOutputStream headerBuffer = new ByteArrayOutputStream();
 			// Build HTTP verb and request URI.
-			print(headerBuffer, request.getMethod());
-			print(headerBuffer, " ");
+			StringBuilder httpVerb = new StringBuilder();
+			httpVerb.append(request.getMethod());
+			httpVerb.append(" ");
 			String requestUri = getProxiedUri(request.getRequestURI());
-			print(headerBuffer, requestUri);
+			httpVerb.append(requestUri);
 			if (request.getQueryString() != null) {
-				print(headerBuffer, "?");
-				print(headerBuffer, request.getQueryString());
+				httpVerb.append("?");
+				httpVerb.append(request.getQueryString());
 			}
-			print(headerBuffer, " HTTP/1.0");
+			httpVerb.append(" HTTP/1.0");
+			print(headerBuffer, httpVerb.toString());
 			crlf(headerBuffer);
 			// Ok, verb and request URI complete, proceed with the headers.
 			copyHeaders(headerBuffer, request);
 			copyCookies(headerBuffer, request);
-//			// Add XFF header. TODO: Merge with pre-existing ones.
-//			print(headerBuffer, "X-Forwarded-For: ");
-//			print(headerBuffer, request.getRemoteAddr());
-//			crlf(headerBuffer);
 			// Add proxied Host header.
 			print(headerBuffer, "Host: "); // Add port?
 			print(headerBuffer, targetHost);
@@ -290,8 +317,6 @@ public class ReverseProxy extends HttpServlet {
 			OutputStream targetOutputStream = socket.getOutputStream();
 			byte[] headerBufferAsBytes = headerBuffer.toByteArray();
 			byte[] httpBodyBufferAsBytes = httpBodyBuffer.toByteArray();
-			System.out.println("Header to target: " + new String(headerBufferAsBytes, ASCII));
-			System.out.println("Body to target: " + new String(httpBodyBufferAsBytes, ASCII));
 			targetOutputStream.write(headerBufferAsBytes);
 			targetOutputStream.write(httpBodyBufferAsBytes);
 			targetOutputStream.flush();
@@ -365,6 +390,11 @@ public class ReverseProxy extends HttpServlet {
 			
 			if (LOG.isDebugEnabled()) {
 				LOG.debug(String.format("Proxied request \"%s\" -> \"%s\" (%d) \"%s\"", request.getRequestURI(), requestUri, httpStatus.getCode(), redirectUrl)); 
+				StringBuffer sb = new StringBuffer(1024);
+				sb.append(LS);
+				dumpIncomingHeaders(request, sb);
+				dumpReturningHeader(headersFromTargetMap, sb);
+				LOG.debug(sb);
 			}
 					
 			targetOutputStream.close(); // TODO: Handle keep-alives.
@@ -387,6 +417,62 @@ public class ReverseProxy extends HttpServlet {
 				catch (IOException e) {
 					// Don't care.
 				}
+			}
+		}
+	}
+
+	private static void dumpReturningHeader(Map<String, List<String>> headersFromTargetMap, StringBuffer sb) {
+		sb.append("----- Headers from target -----");
+		sb.append(LS);
+		
+		for (Map.Entry<String, List<String>> headers : headersFromTargetMap.entrySet()) {
+			sb.append("   ");
+			sb.append(headers.getKey());
+			sb.append(": ");
+			List<String> values = headers.getValue();
+			if (values.size() > 1) {
+				sb.append("[");
+			}
+			for (int i = 0; i < values.size(); i++) {
+				sb.append(values.get(i));
+			}
+			if (values.size() > 1) {
+				sb.append("]");
+			}
+			sb.append(LS);
+		}
+	}
+
+	private void dumpIncomingHeaders(HttpServletRequest request, StringBuffer sb) {
+		sb.append("----- Incoming Request -----");
+		sb.append(LS);
+		sb.append("   ");
+		sb.append(request.getMethod());
+		sb.append(" ");
+		sb.append(request.getRequestURI());
+		if (request.getQueryString() != null) {
+			sb.append("?");
+			sb.append(request.getQueryString());
+		}
+		sb.append(LS);
+		for (Enumeration<String> headers = request.getHeaderNames(); headers.hasMoreElements(); ) {
+			String headerName = headers.nextElement();
+		
+			sb.append("   ");
+			sb.append(headerName);
+			sb.append(": ");
+			sb.append(dumpEnumeration(request.getHeaders(headerName)));
+			sb.append(LS);
+		}
+		Cookie[] cookies = request.getCookies();
+		if (cookies != null) {
+			for (int i = 0; i < cookies.length; i++) {
+				sb.append("   ");
+				sb.append("Cookie: ");
+				sb.append(cookies[i].getName());
+				sb.append("=");
+				sb.append(cookies[i].getValue());
+				sb.append(LS);
 			}
 		}
 	}
