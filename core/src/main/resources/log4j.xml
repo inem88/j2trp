@@ -19,7 +19,7 @@
   </appender>  
 
   <logger name="com.heimore.j2trp.core">
-    <level value="debug" />
+    <level value="trace" />
     <appender-ref ref="ConsoleAppender"/>
     <appender-ref ref="FileAppender"/>
   </logger>

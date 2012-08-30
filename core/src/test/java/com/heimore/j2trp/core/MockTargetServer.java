@@ -29,7 +29,6 @@ public class MockTargetServer {
 	@Path("/someFile.html")
 	public Response executeGet (@Context Request req, @HeaderParam("X-Forwarded-For") String xff, @QueryParam("k1") String k1, @QueryParam("k2") String k2) throws IOException {
 		
-		System.out.println("Got here!");
 		ResponseBuilder builder = Response.ok();
 		builder.header("X-Forwarded-For", xff);
 		builder.entity("<html><head><title>MockTargetServer</title></head><body><h1>It works " + (k1 != null && k2 != null ? "with" : "without") + " query strings!</h1></body></html>");
@@ -41,7 +40,6 @@ public class MockTargetServer {
 	@Path("/redirect.html")
 	public Response executeRedirect (@Context Request req) throws IOException, URISyntaxException {
 		
-		System.out.println("Got here!");
 		ResponseBuilder builder = Response.status(302);
 		builder.header("Location", new URI("other_location.html?q1=v1"));
 		return builder.build();
@@ -52,7 +50,6 @@ public class MockTargetServer {
 	@Path("/someFileWithCookie.html")
 	public Response executeGetWithCookie (@Context Request req, @CookieParam("TEST_COOKIE") String cookie, @CookieParam("TEST_COOKIE2") String cookie2) throws IOException {
 		
-		System.out.println("Got here with cookie: " + cookie);
 		ResponseBuilder builder = Response.ok();
 		NewCookie simpleCookie = new NewCookie("SIMPLE", "COOKIE", null, null, 0, null, -1, false);
 		NewCookie domainCookie = new NewCookie("COMPLETE", "VALUE2", "/sfibonusadmin", ".example.org", "Some comment.", 0, true);
@@ -68,7 +65,6 @@ public class MockTargetServer {
 	@Path("/someFile.html")
 	public Response executePost (@Context Request req, @FormParam("userid") String username, @FormParam("password") String password) throws IOException {
 		
-		System.out.println("Got here: " + username);
 		ResponseBuilder builder = Response.ok();
 		builder.entity(String.format("<html><head><title>MockTargetServer</title></head><body>%s:%s</body></html>", username, password));
 		return builder.build();

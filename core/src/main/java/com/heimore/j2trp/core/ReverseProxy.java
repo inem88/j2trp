@@ -48,7 +48,7 @@ public class ReverseProxy extends HttpServlet {
 	private static final String HTTP_VERB = "HTTP VERB";
 	
     @SuppressWarnings("unchecked")
-    protected static void copyHeaders (OutputStream ps, HttpServletRequest request) throws IOException {
+    protected static void copyHeaders (Map<String, List<String>> outgoingHeaders, OutputStream ps, HttpServletRequest request) throws IOException {
     	
     	boolean foundXFFHeaders = false;
     	final String XFF = "X-Forwarded-For";
@@ -68,22 +68,29 @@ public class ReverseProxy extends HttpServlet {
         			headerBuffer.append(headerValue);
         			print(ps, headerBuffer.toString());
         			crlf(ps);
+        			
+        			// Record outgoing headers
+        			addHeader(outgoingHeaders, headerName, headerValue);
         		}
     		}
     		
     		
     	}
     	
+    	StringBuilder xffHeader = new StringBuilder();
     	print(ps, XFF);
     	print(ps, ": ");
     	if (foundXFFHeaders) {
     		for (Enumeration<String> headerValues = request.getHeaders(XFF); headerValues.hasMoreElements(); ) {
-    			print(ps, headerValues.nextElement());
-    			print(ps, ", ");
+    			xffHeader.append(headerValues.nextElement());
+    			xffHeader.append(", ");
     		}
     	}
-    	print(ps, request.getRemoteAddr());
+    	xffHeader.append(request.getRemoteAddr());
+    	print(ps, xffHeader.toString());
     	crlf(ps);
+    	
+    	addHeader(outgoingHeaders, XFF, xffHeader.toString());
     }
     
     protected static List<Cookie> convertCookies (List<HttpCookie> cookies, String targetBaseUri, String baseUri) {
@@ -147,23 +154,25 @@ public class ReverseProxy extends HttpServlet {
     	}
     }
 
-    protected static void copyCookies (OutputStream ps, HttpServletRequest request) throws IOException {
+    protected static void copyCookies (Map<String, List<String>> outgoingHeaders, OutputStream ps, HttpServletRequest request) throws IOException {
     	Cookie[] cookies = request.getCookies();
     	
     	if (cookies != null) {
     		print(ps, "Cookie: ");
+    		StringBuilder cookieBuffer = new StringBuilder();
         	for (int i = 0; i < cookies.length; i++) {
-        		print(ps, cookies[i].getName());
-        		print(ps, "=");
-        		print(ps, cookies[i].getValue());
+        		cookieBuffer.append(cookies[i].getName());
+        		cookieBuffer.append("=");
+        		cookieBuffer.append(cookies[i].getValue());
         		if (i < cookies.length - 1) {
-        			print(ps, "; ");
+        			cookieBuffer.append("; ");
         		}
         		else {
+        			print(ps, cookieBuffer.toString());
         			crlf(ps);
         		}
         	}
-
+        	addHeader(outgoingHeaders, "Cookie: ", cookieBuffer.toString());
     	}
     }
     
@@ -287,19 +296,23 @@ public class ReverseProxy extends HttpServlet {
 			print(headerBuffer, httpVerb.toString());
 			crlf(headerBuffer);
 			// Ok, verb and request URI complete, proceed with the headers.
-			copyHeaders(headerBuffer, request);
-			copyCookies(headerBuffer, request);
+			Map<String, List<String>> outgoingHeaders = new HashMap<String, List<String>>();
+			copyHeaders(outgoingHeaders, headerBuffer, request);
+			copyCookies(outgoingHeaders, headerBuffer, request);
 			// Add proxied Host header.
+			StringBuilder hostHeader = new StringBuilder();
 			print(headerBuffer, "Host: "); // Add port?
-			print(headerBuffer, targetHost);
+			hostHeader.append(targetHost);
 			// Special handling of known HTTP ports (basically ports other than 80 and 443)
 			if (!isWellKnownPort(targetPort)) {
-				print(headerBuffer, ":");
-				print(headerBuffer, String.valueOf(targetPort));
+				hostHeader.append(":");
+				hostHeader.append(targetPort);
 			}
+			print(headerBuffer, hostHeader.toString());
 			// Ok, end header with two CRLFs
 			crlf(headerBuffer);
 			crlf(headerBuffer);
+			addHeader(outgoingHeaders, "Host", hostHeader.toString());
 			// Header now complete.
 			
 			ByteArrayOutputStream httpBodyBuffer = new ByteArrayOutputStream();
@@ -347,9 +360,7 @@ public class ReverseProxy extends HttpServlet {
 							bufferedHeadersFromTarget.write(byteBuffer, 0, i);
 							
 							String allHeaders = new String(bufferedHeadersFromTarget.toByteArray(), 0, bufferedHeadersFromTarget.size() - 3, "ISO8859-1");
-							System.out.println("---->" + allHeaders + "<----");
 							httpStatus = parseHeaders(allHeaders, headersFromTargetMap);
-							System.out.println(String.format("Target returned code %d (%s)", httpStatus.getCode(), httpStatus.getStatus()));
 							bodyMarker = i + 1;
 						}
 					}
@@ -361,6 +372,7 @@ public class ReverseProxy extends HttpServlet {
 				if (!headerFound) {
 					bufferedHeadersFromTarget.write(byteBuffer, 0, bytesRead);
 				}
+				
 				
 				// Ok, any manipulation of the header should occur BEFORE the body...
 				if (headerFound) {
@@ -387,14 +399,17 @@ public class ReverseProxy extends HttpServlet {
 				}
 				bytesRead = proxiedInputSteam.read(byteBuffer);
 			}
+			LOG.info(String.format("Proxied request \"%s\" -> \"%s\" (%d)", request.getRequestURI(), requestUri, httpStatus.getCode()));
 			
-			if (LOG.isDebugEnabled()) {
-				LOG.debug(String.format("Proxied request \"%s\" -> \"%s\" (%d) \"%s\"", request.getRequestURI(), requestUri, httpStatus.getCode(), redirectUrl)); 
-				StringBuffer sb = new StringBuffer(1024);
+			if (LOG.isTraceEnabled()) {
+				 
+				StringBuilder sb = new StringBuilder(1024);
 				sb.append(LS);
 				dumpIncomingHeaders(request, sb);
-				dumpReturningHeader(headersFromTargetMap, sb);
-				LOG.debug(sb);
+				dumpOutgoingHeaders(httpVerb.toString(), outgoingHeaders, sb);
+				dumpReturningHeadersFromTarget(httpStatus, headersFromTargetMap, sb);
+				dumpReturningHeadersToClient(redirectUrl, sb);
+				LOG.trace(sb);
 			}
 					
 			targetOutputStream.close(); // TODO: Handle keep-alives.
@@ -421,11 +436,57 @@ public class ReverseProxy extends HttpServlet {
 		}
 	}
 
-	private static void dumpReturningHeader(Map<String, List<String>> headersFromTargetMap, StringBuffer sb) {
-		sb.append("----- Headers from target -----");
+	private static void dumpReturningHeadersFromTarget(HttpStatus httpStatus, Map<String, List<String>> headersFromTargetMap, StringBuilder sb) {
+		sb.append("----- <= J2TRP <= -----");
 		sb.append(LS);
-		
+		sb.append("   ");
+		sb.append("Return code: ");
+		sb.append(httpStatus.getCode());
+		sb.append(" ");
+		sb.append(httpStatus.getStatus());
+		sb.append(LS);
 		for (Map.Entry<String, List<String>> headers : headersFromTargetMap.entrySet()) {
+			sb.append("   ");
+			sb.append(headers.getKey());
+			sb.append(": ");
+			List<String> values = headers.getValue();
+			if (values.size() > 1) {
+				sb.append("[");
+			}
+			for (int i = 0; i < values.size(); i++) {
+				sb.append(values.get(i));
+				if (i < values.size() - 1) {
+					sb.append(" ");
+				}
+			}
+			if (values.size() > 1) {
+				sb.append("]");
+			}
+			sb.append(LS);
+		}
+	}
+	
+	private static void dumpReturningHeadersToClient(String redirectUrl, StringBuilder sb) {
+		sb.append("----- <= J2TRP -----");
+		sb.append(LS);
+		if (redirectUrl != null) {
+			sb.append("   ");
+			sb.append("Location: ");
+			sb.append(redirectUrl);
+		}
+		else {
+			sb.append("None.");
+		}
+		sb.append(LS);
+	}
+
+	private static void dumpOutgoingHeaders(String httpVerb, Map<String, List<String>> outgoingHeaders, StringBuilder sb) {
+		sb.append("---- J2TRP => -----");
+		sb.append(LS);
+		sb.append("   ");
+		sb.append(httpVerb);
+		sb.append(LS);
+		for (Map.Entry<String, List<String>> headers : outgoingHeaders.entrySet()) {
 			sb.append("   ");
 			sb.append(headers.getKey());
 			sb.append(": ");
@@ -442,9 +503,10 @@ public class ReverseProxy extends HttpServlet {
 			sb.append(LS);
 		}
 	}
-
-	private void dumpIncomingHeaders(HttpServletRequest request, StringBuffer sb) {
-		sb.append("----- Incoming Request -----");
+	
+	@SuppressWarnings("unchecked")
+	private static void dumpIncomingHeaders(HttpServletRequest request, StringBuilder sb) {
+		sb.append("----- => J2TRP -----");
 		sb.append(LS);
 		sb.append("   ");
 		sb.append(request.getMethod());
