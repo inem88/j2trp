@@ -1,6 +1,9 @@
 package com.heimore.j2trp.core;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -157,6 +160,9 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
 		
+		req.addHeader("X-Test-Header", 1);
+		req.addHeader("X-Test-Header", 2);
+		req.addHeader("X-Test-Header", 3);
 		req.addHeader("Accept", "text/html");
 		req.addHeader("User-Agent", "MockHttpServletRequest");
 		req.setContentType("application/x-www-form-urlencoded"); // ; charset=UTF-8
@@ -164,11 +170,38 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		// req.setCharacterEncoding(characterEncoding)
 		req.setContent(formData);
 		req.addHeader("Content-Length", formData.length);
+		req.addHeader("Connection", "keep-alive");
 		reverseProxyServlet.service(req, resp);
 		Assert.assertEquals(200, resp.getStatus());
 		String contentAsString = resp.getContentAsString();
 		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body>joe:guessme</body></html>", contentAsString);
 		
+		
+	}
+	
+	@Test
+	public void testMiscUtils() {
+		
+		String dumpEnumStrMultiple = ReverseProxy.dumpEnumeration(Collections.enumeration(Arrays.asList("A", "B", "C")));
+		Assert.assertNotNull(dumpEnumStrMultiple);
+		Assert.assertEquals("[A, B, C]", dumpEnumStrMultiple);
+		
+		String dumpEnumStrSingle = ReverseProxy.dumpEnumeration(Collections.enumeration(Arrays.asList("X")));
+		Assert.assertNotNull(dumpEnumStrSingle);
+		Assert.assertEquals("X", dumpEnumStrSingle);
+		
+		String dumpEnumStrEmpty = ReverseProxy.dumpEnumeration(Collections.enumeration(new ArrayList<String>()));
+		Assert.assertNotNull(dumpEnumStrEmpty);
+		Assert.assertTrue(dumpEnumStrEmpty.isEmpty());
+	}
+	
+	@Test
+	public void testBuildRedirectUrl() {
+		MockHttpServletRequest req = new MockHttpServletRequest();
+		ReverseProxy reverseProxy = super.applicationContext.getBean(
+				"reverseProxy", ReverseProxy.class);
+		
+		Assert.assertEquals("https://my.revproxy.org:4711/translated/path", reverseProxy.buildRedirectUrl(req, "/translated/path"));
 		
 	}
 

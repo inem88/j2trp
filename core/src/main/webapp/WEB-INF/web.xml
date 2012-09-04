@@ -2,20 +2,11 @@
 
 <web-app xmlns:javaee="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
   <javaee:display-name>Archetype Created Web Application</javaee:display-name>
-  <!-- 
-    servletConfig.addInitParameter("TARGET_HOST", "127.0.0.1");
-    servletConfig.addInitParameter("TARGET_PORT", "64000");
-    servletConfig.addInitParameter("TARGET_BASE_URI", "/sfibonusadmin");
-    servletConfig.addInitParameter("PROXIED_BASE_URI", "/j2trp");
-    servletConfig.addInitParameter("PROXIED_PROTOCOL", "https");
-    servletConfig.addInitParameter("PROXIED_HOST", "my.revproxy.org");
-    servletConfig.addInitParameter("PROXIED_PORT", "4711");
-  
-   -->
+
   <servlet>
       <init-param>
         <param-name>TARGET_HOST</param-name>
-        <param-value>oushinotsuno.wordpress.com</param-value>
+        <param-value>www.aftonbladet.se</param-value>
       </init-param>
       <init-param>
         <param-name>TARGET_PORT</param-name>
