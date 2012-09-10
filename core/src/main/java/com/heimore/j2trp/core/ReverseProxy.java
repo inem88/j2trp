@@ -14,10 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import javax.servlet.ServletConfig;
@@ -45,9 +43,6 @@ public class ReverseProxy extends HttpServlet {
 	private int targetPort;
 	private String targetBaseUri;
 	private String baseUri;
-	private int proxiedPort;
-	private String proxiedHost;
-	private String proxiedProtocol;
 
 	
 	private static final long serialVersionUID = 1L;
@@ -296,25 +291,14 @@ public class ReverseProxy extends HttpServlet {
 	protected String buildRedirectUrl (HttpServletRequest req, String translatedPath) {
 		StringBuilder sb = new StringBuilder();
 		
-		if (proxiedProtocol != null) {
-			sb.append(proxiedProtocol);
-		}
-		else {
-			sb.append("http");
-			sb.append(req.isSecure() ? "s" : "");
-		}
+		sb.append(req.getScheme());
 		sb.append("://");
 		
-		if (proxiedHost != null) {
-			sb.append(proxiedHost);
-		}
-		else {
-			sb.append(req.getLocalName());
-		}
+		sb.append(req.getServerName());
 		
-		if (!isWellKnownPort(proxiedPort)) {
+		if (!isWellKnownPort(req.getServerPort())) {
 			sb.append(":");
-			sb.append(proxiedPort);
+			sb.append(req.getServerPort());
 		}
 		sb.append(translatedPath);
 			
@@ -597,6 +581,8 @@ public class ReverseProxy extends HttpServlet {
 			sb.append("?");
 			sb.append(request.getQueryString());
 		}
+		sb.append(" ");
+		sb.append(request.getProtocol());
 		sb.append(LS);
 		for (Enumeration<String> headers = request.getHeaderNames(); headers.hasMoreElements(); ) {
 			String headerName = headers.nextElement();
@@ -635,15 +621,7 @@ public class ReverseProxy extends HttpServlet {
 		targetHost = targetUrl.getHost();
 		targetPort = targetUrl.getPort();
 		targetBaseUri = targetUrl.getPath();
-		baseUri = config.getInitParameter("PROXIED_BASE_URI");
-		// TODO: Sensible defaults....
-		String tProxiedPort = config.getInitParameter("PROXIED_PORT");
-		if (tProxiedPort == null) {
-			tProxiedPort = "-1";
-		}
-		proxiedPort = Integer.parseInt(tProxiedPort);
-		proxiedHost = config.getInitParameter("PROXIED_HOST");
-		proxiedProtocol = config.getInitParameter("PROXIED_PROTOCOL");
+		baseUri = config.getServletContext().getContextPath();
 	}
 
 	

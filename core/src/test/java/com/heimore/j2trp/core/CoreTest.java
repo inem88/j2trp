@@ -14,6 +14,7 @@ import junit.framework.Assert;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockServletConfig;
+import org.springframework.mock.web.MockServletContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.annotations.AfterClass;
@@ -40,12 +41,14 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	public void setup() throws ServletException, IOException {
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
-		MockServletConfig servletConfig = new MockServletConfig();
+		MockServletContext servletCtx = new MockServletContext();
+		servletCtx.setContextPath("/j2trp");
+		MockServletConfig servletConfig = new MockServletConfig(servletCtx);
 		servletConfig.addInitParameter("TARGET_URL", "http://localhost:64000/sfibonusadmin");
-		servletConfig.addInitParameter("PROXIED_BASE_URI", "/j2trp");
-		servletConfig.addInitParameter("PROXIED_PROTOCOL", "https");
-		servletConfig.addInitParameter("PROXIED_HOST", "my.revproxy.org");
-		servletConfig.addInitParameter("PROXIED_PORT", "4711");
+//		servletConfig.addInitParameter("PROXIED_BASE_URI", "/j2trp");
+//		servletConfig.addInitParameter("PROXIED_PROTOCOL", "https");
+//		servletConfig.addInitParameter("PROXIED_HOST", "my.revproxy.org");
+//		servletConfig.addInitParameter("PROXIED_PORT", "4711");
 		reverseProxyServlet.init(servletConfig);
 		svcContainer.startServer();
 	}
@@ -54,10 +57,20 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	public void tearDown() {
 		svcContainer.stopServer();
 	}
+	
+	static MockHttpServletRequest createReq (String method, String uri) {
+		MockHttpServletRequest req = new MockHttpServletRequest(method, uri);
+		req.setServerName("my.revproxy.org");
+		req.setScheme("https");
+		req.setProtocol("HTTP/1.0");
+		req.setServerPort(4711);
+		req.setContextPath("/j2trp");
+		return req;
+	}
 
 	@Test
 	public void testRedirectedRequest() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/redirect.html");
+		MockHttpServletRequest req = createReq("GET", "/j2trp/redirect.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
@@ -72,7 +85,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test
 	public void testNormalRequestWithoutQueryString() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/someFile.html");
+		MockHttpServletRequest req = createReq("GET", "/j2trp/someFile.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
@@ -90,7 +103,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test
 	public void testNormalRequestWithCookie() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/someFileWithCookie.html");
+		MockHttpServletRequest req = createReq("GET", "/j2trp/someFileWithCookie.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
@@ -107,7 +120,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test
 	public void testNormalRequestWithCookies() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/someFileWithCookie.html");
+		MockHttpServletRequest req = createReq("GET", "/j2trp/someFileWithCookie.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
@@ -135,7 +148,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test(enabled = true)
 	public void testNormalRequestWithQueryString() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp/someFile.html");
+		MockHttpServletRequest req = createReq("GET", "/j2trp/someFile.html");
 		req.setQueryString("k1=v1&k2=v2");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
@@ -153,7 +166,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	
 	@Test(enabled = true)
 	public void testNormalPost() throws Exception {
-		MockHttpServletRequest req = new MockHttpServletRequest("POST", "/j2trp/someFile.html");
+		MockHttpServletRequest req = createReq("POST", "/j2trp/someFile.html");
 		MockHttpServletResponse resp = new MockHttpServletResponse();
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
 				"reverseProxy", HttpServlet.class);
@@ -196,6 +209,9 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	@Test
 	public void testBuildRedirectUrl() {
 		MockHttpServletRequest req = new MockHttpServletRequest();
+		req.setServerName("my.revproxy.org");
+		req.setScheme("https");
+		req.setServerPort(4711);
 		ReverseProxy reverseProxy = super.applicationContext.getBean(
 				"reverseProxy", ReverseProxy.class);
 		
