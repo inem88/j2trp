@@ -5,32 +5,8 @@
 
   <servlet>
       <init-param>
-        <param-name>TARGET_HOST</param-name>
-        <param-value>www.aftonbladet.se</param-value>
-      </init-param>
-      <init-param>
-        <param-name>TARGET_PORT</param-name>
-        <param-value>80</param-value>
-      </init-param>
-      <init-param>
-        <param-name>TARGET_BASE_URI</param-name>
-        <param-value>/</param-value>
-      </init-param>
-      <init-param>
-        <param-name>PROXIED_BASE_URI</param-name>
-        <param-value>/</param-value>
-      </init-param>
-      <init-param>
-        <param-name>PROXIED_PROTOCOL</param-name>
-        <param-value>http</param-value>
-      </init-param>
-      <init-param>
-        <param-name>PROXIED_HOST</param-name>
-        <param-value>localhost</param-value>
-      </init-param>
-      <init-param>
-        <param-name>PROXIED_PORT</param-name>
-        <param-value>8080</param-value>
+        <param-name>TARGET_URL</param-name>
+        <param-value>http://www.aftonbladet.se</param-value>
       </init-param>
     <javaee:description></javaee:description>
     <javaee:display-name>ReverseProxy</javaee:display-name>

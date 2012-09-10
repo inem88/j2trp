@@ -620,6 +620,11 @@ public class ReverseProxy extends HttpServlet {
 		
 		targetHost = targetUrl.getHost();
 		targetPort = targetUrl.getPort();
+		
+		if (targetPort == -1) {
+			targetPort = targetUrl.getDefaultPort();
+		}
+		
 		targetBaseUri = targetUrl.getPath();
 		baseUri = config.getServletContext().getContextPath();
 	}
