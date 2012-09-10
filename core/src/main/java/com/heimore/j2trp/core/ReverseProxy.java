@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -549,7 +550,7 @@ public class ReverseProxy extends HttpServlet {
 			sb.append(redirectUrl);
 		}
 		else {
-			sb.append("None.");
+			sb.append("   None.");
 		}
 		sb.append(LS);
 	}
@@ -622,10 +623,19 @@ public class ReverseProxy extends HttpServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		targetHost = config.getInitParameter("TARGET_HOST");
-		targetPort = Integer.parseInt(config.getInitParameter("TARGET_PORT"));
+		
+		URL targetUrl = null;
+		try {
+			targetUrl = new URL(config.getInitParameter("TARGET_URL"));
+		}
+		catch (MalformedURLException e) {
+			throw new ServletException(e);
+		}
+		
+		targetHost = targetUrl.getHost();
+		targetPort = targetUrl.getPort();
+		targetBaseUri = targetUrl.getPath();
 		baseUri = config.getInitParameter("PROXIED_BASE_URI");
-		targetBaseUri = config.getInitParameter("TARGET_BASE_URI");
 		// TODO: Sensible defaults....
 		String tProxiedPort = config.getInitParameter("PROXIED_PORT");
 		if (tProxiedPort == null) {
