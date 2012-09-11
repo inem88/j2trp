@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.net.SocketFactory;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -43,6 +44,7 @@ public class ReverseProxy extends HttpServlet {
 	private int targetPort;
 	private String targetBaseUri;
 	private String baseUri;
+	private boolean useSsl;
 
 	
 	private static final long serialVersionUID = 1L;
@@ -305,6 +307,19 @@ public class ReverseProxy extends HttpServlet {
 		return sb.toString();
 	}
 	
+	private Socket createSocket() throws UnknownHostException, IOException {
+		
+		Socket result;
+		if (useSsl) {
+			result = SocketFactory.getDefault().createSocket(targetHost, targetPort);
+		}
+		else {
+			result = new Socket(targetHost, targetPort);
+		}
+		
+		return result;
+	}
+	
 	public void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		Socket socket = null;
 		byte[] byteBuffer = new byte[1024];
@@ -312,7 +327,7 @@ public class ReverseProxy extends HttpServlet {
 		try {
 			// Connect to target.
 			try {
-			 socket = new Socket(targetHost, targetPort);
+			   socket = createSocket();
 			}
 			catch (UnknownHostException e) {
 				String errorCode = UUID.randomUUID().toString();
@@ -605,7 +620,7 @@ public class ReverseProxy extends HttpServlet {
 			}
 		}
 	}
-
+	
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
@@ -620,6 +635,7 @@ public class ReverseProxy extends HttpServlet {
 		
 		targetHost = targetUrl.getHost();
 		targetPort = targetUrl.getPort();
+		useSsl = targetUrl.getProtocol().startsWith("https");
 		
 		if (targetPort == -1) {
 			targetPort = targetUrl.getDefaultPort();

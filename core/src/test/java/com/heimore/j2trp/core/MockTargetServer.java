@@ -69,4 +69,22 @@ public class MockTargetServer {
 		builder.entity(String.format("<html><head><title>MockTargetServer</title></head><body>%s:%s</body></html>", username, password));
 		return builder.build();
 	}
+	
+	@GET
+	@Produces("text/html")
+	@Path("/500")
+	public Response execute500Response (@Context Request req) throws IOException {
+		
+		throw new IOException();
+	}
+	
+	@GET
+	@Produces("text/html")
+	@Path("interrupt")
+	public Response executeInterruptedResponse (@Context Request req) throws IOException {
+		
+		ResponseBuilder builder = Response.serverError();
+		builder.entity(null);
+		return builder.build();
+	}
 }

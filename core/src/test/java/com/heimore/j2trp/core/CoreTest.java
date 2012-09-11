@@ -8,6 +8,7 @@ import java.util.Collections;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
@@ -219,4 +220,27 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		
 	}
 
+	@Test
+	public void testInterruptedResponse() throws Exception {
+		MockHttpServletRequest req = createReq("GET", "/j2trp/500");
+		MockHttpServletResponse resp = new MockHttpServletResponse();
+		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
+				"reverseProxy", HttpServlet.class);
+		
+		reverseProxyServlet.service(req, resp);
+		
+		Assert.assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resp.getStatus());
+	}
+	
+	@Test(enabled = false)
+	public void testBrokenPipe() throws Exception {
+		MockHttpServletRequest req = createReq("GET", "/j2trp/interrupt");
+		MockHttpServletResponse resp = new MockHttpServletResponse();
+		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
+				"reverseProxy", HttpServlet.class);
+		
+		reverseProxyServlet.service(req, resp);
+		
+		Assert.assertEquals(HttpServletResponse.SC_BAD_GATEWAY, resp.getStatus());
+	}
 }
