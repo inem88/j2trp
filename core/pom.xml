@@ -84,7 +84,7 @@
            <archive>
             <addMavenDescriptor>false</addMavenDescriptor>
             <manifestEntries>
-             <git-tag>${scm.tag}</git-tag>
+             <git-tag>${project.scm.tag}</git-tag>
            </manifestEntries>
           </archive>   
         </configuration>
