@@ -627,6 +627,7 @@ public class ReverseProxy extends HttpServlet {
 		
 		URL targetUrl = null;
 		try {
+			LOG.info("Servlet param TARGET_URL is: " + config.getInitParameter("TARGET_URL"));
 			targetUrl = new URL(config.getInitParameter("TARGET_URL"));
 		}
 		catch (MalformedURLException e) {

@@ -3,7 +3,7 @@
   <groupId>com.heimore.j2trp</groupId>
   <artifactId>core</artifactId>
   <packaging>war</packaging>
-  <version>1.0</version>
+  <version>1.0.1</version>
   <name>J2 Transparent Reverse Proxy</name>
   <url>http://maven.apache.org</url>
   <dependencies>
