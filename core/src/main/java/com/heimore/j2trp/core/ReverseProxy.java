@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.net.SocketFactory;
+import javax.net.ssl.SSLSocketFactory;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -311,7 +312,7 @@ public class ReverseProxy extends HttpServlet {
 		
 		Socket result;
 		if (useSsl) {
-			result = SocketFactory.getDefault().createSocket(targetHost, targetPort);
+			result = SSLSocketFactory.getDefault().createSocket(targetHost, targetPort);
 		}
 		else {
 			result = new Socket(targetHost, targetPort);

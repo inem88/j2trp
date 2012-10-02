@@ -5,5 +5,8 @@
 
 
   <bean id="reverseProxy" class="com.heimore.j2trp.core.ReverseProxy"/>
+  
+  
+  <bean id="sslReverseProxy" class="com.heimore.j2trp.core.ReverseProxy"/>
 
 </beans>

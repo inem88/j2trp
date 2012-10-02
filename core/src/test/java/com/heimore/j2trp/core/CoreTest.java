@@ -23,6 +23,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.heimore.test.util.EmbeddedServiceContainer;
+import com.sun.grizzly.filter.SSLReadFilter;
 
 @ContextConfiguration(locations = "classpath:reverseProxyContext.xml")
 @Test
@@ -30,6 +31,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 
 	EmbeddedServiceContainer svcContainer;
 	private static final int PORT = 64000;
+	SSLServer sslServer;
 
 	public CoreTest() {
 		svcContainer = new EmbeddedServiceContainer(
@@ -46,17 +48,33 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		servletCtx.setContextPath("/j2trp");
 		MockServletConfig servletConfig = new MockServletConfig(servletCtx);
 		servletConfig.addInitParameter("TARGET_URL", "http://localhost:64000/sfibonusadmin");
-//		servletConfig.addInitParameter("PROXIED_BASE_URI", "/j2trp");
-//		servletConfig.addInitParameter("PROXIED_PROTOCOL", "https");
-//		servletConfig.addInitParameter("PROXIED_HOST", "my.revproxy.org");
-//		servletConfig.addInitParameter("PROXIED_PORT", "4711");
 		reverseProxyServlet.init(servletConfig);
 		svcContainer.startServer();
+		
+		// SSL Test setup:
+		HttpServlet sslReverseProxyServlet = super.applicationContext.getBean("sslReverseProxy", HttpServlet.class);
+		MockServletContext sslServletCtx = new MockServletContext();
+		sslServletCtx.setContextPath("/j2trp_ssl");
+		MockServletConfig sslServletConfig = new MockServletConfig(sslServletCtx);
+		sslServletConfig.addInitParameter("TARGET_URL", "https://localhost:65000");
+		sslReverseProxyServlet.init(sslServletConfig);
+		
+		String pathToKeystore = CoreTest.class.getClassLoader().getResource("unit_test_ssl.keystore").toExternalForm().substring(5);
+		System.setProperty("javax.net.ssl.keyStore", pathToKeystore);
+		System.setProperty("javax.net.ssl.keyStorePassword", "changeit");
+		
+		String pathToTruststore = CoreTest.class.getClassLoader().getResource("unit_test_ssl.truststore").toExternalForm().substring(5);
+		System.setProperty("javax.net.ssl.trustStore", pathToTruststore);
+	    System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
+		
+		sslServer = new SSLServer(65000);
+		sslServer.start();
 	}
 
 	@AfterClass
 	public void tearDown() {
 		svcContainer.stopServer();
+		sslServer.stop();
 	}
 	
 	static MockHttpServletRequest createReq (String method, String uri) {
@@ -66,6 +84,16 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		req.setProtocol("HTTP/1.0");
 		req.setServerPort(4711);
 		req.setContextPath("/j2trp");
+		return req;
+	}
+	
+	static MockHttpServletRequest createSslReq (String method, String uri) {
+		MockHttpServletRequest req = new MockHttpServletRequest(method, uri);
+		req.setServerName("my.revproxy.org");
+		req.setScheme("https");
+		req.setProtocol("HTTP/1.0");
+		req.setServerPort(4711);
+		req.setContextPath("/j2trp_ssl");
 		return req;
 	}
 
@@ -242,5 +270,15 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		reverseProxyServlet.service(req, resp);
 		
 		Assert.assertEquals(HttpServletResponse.SC_BAD_GATEWAY, resp.getStatus());
+	}
+	
+	public void testSSL() throws Exception {
+		MockHttpServletRequest req = createSslReq("GET", "/j2trp_ssl/normal");
+		MockHttpServletResponse resp = new MockHttpServletResponse();
+		HttpServlet sslReverseProxyServlet = super.applicationContext.getBean(
+				"sslReverseProxy", HttpServlet.class);
+		sslReverseProxyServlet.service(req, resp);
+		
+		Assert.assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
 	}
 }
