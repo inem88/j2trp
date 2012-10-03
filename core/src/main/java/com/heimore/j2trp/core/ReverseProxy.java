@@ -471,9 +471,7 @@ public class ReverseProxy extends HttpServlet {
 			}
 			long end = System.currentTimeMillis();
 			if (httpStatus == null) {
-				clientsRespOs.write(BAD_GATEWAY_ERROR);
-				clientsRespOs.write(CR_LF);
-				clientsRespOs.write(CR_LF);
+				response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
 			}
 			LOG.info(String.format("Proxied request %s \"%s\" -> \"%s\" (%d)", request.getMethod(), request.getRequestURI(), requestUri, (httpStatus != null ? httpStatus.getCode() : 0)));
 			
