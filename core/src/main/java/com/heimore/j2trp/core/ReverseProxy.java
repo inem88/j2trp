@@ -54,7 +54,7 @@ public class ReverseProxy extends HttpServlet {
 	private static final int[] WELL_KNOWN_PORT = new int[] { 80, 443 }; // Array must be sorted.
 	private static final byte[] HEADER_END_MARKER = new byte[] { (byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a };
 	private static final String XFF_HEADER_NAME = "X-Forwarded-For";
-	
+	private static final byte[] BAD_GATEWAY_ERROR = "502 Bad gateway".getBytes(ASCII);	
     @SuppressWarnings("unchecked")
     protected static void copyHeaders (Map<String, List<String>> outgoingHeaders, Map<String, TouchedHeader> touchedHeaders, OutputStream ps, HttpServletRequest request) throws IOException {
     	
@@ -470,7 +470,12 @@ public class ReverseProxy extends HttpServlet {
 				bytesRead = proxiedInputSteam.read(byteBuffer);
 			}
 			long end = System.currentTimeMillis();
-			LOG.info(String.format("Proxied request %s \"%s\" -> \"%s\" (%d)", request.getMethod(), request.getRequestURI(), requestUri, httpStatus.getCode()));
+			if (httpStatus == null) {
+				clientsRespOs.write(BAD_GATEWAY_ERROR);
+				clientsRespOs.write(CR_LF);
+				clientsRespOs.write(CR_LF);
+			}
+			LOG.info(String.format("Proxied request %s \"%s\" -> \"%s\" (%d)", request.getMethod(), request.getRequestURI(), requestUri, (httpStatus != null ? httpStatus.getCode() : 0)));
 			
 			if (LOG.isTraceEnabled()) {
 				 
@@ -483,11 +488,11 @@ public class ReverseProxy extends HttpServlet {
 				dumpIncomingHeaders(request, sb);
 				dumpOutgoingHeaders(httpVerb.toString(), outgoingHeaders, touchedHeaders, sb);
 				dumpReturningHeadersFromTarget(httpStatus, headersFromTargetMap, sb);
-				dumpReturningHeadersToClient(redirectUrl, sb);
+				dumpReturningHeadersToClient(httpStatus == null, redirectUrl, sb);
 				LOG.trace(sb);
 			}
 					
-			targetOutputStream.close(); // TODO: Handle keep-alives.
+			targetOutputStream.close();
 			clientsRespOs.close();
 			
 		}
@@ -516,9 +521,14 @@ public class ReverseProxy extends HttpServlet {
 		sb.append(LS);
 		sb.append("   ");
 		sb.append("Return code: ");
-		sb.append(httpStatus.getCode());
-		sb.append(" ");
-		sb.append(httpStatus.getStatus());
+		if (httpStatus != null) {
+			sb.append(httpStatus.getCode());
+			sb.append(" ");
+			sb.append(httpStatus.getStatus());
+		}
+		else {
+			sb.append("N/A");
+		}
 		sb.append(LS);
 		for (Map.Entry<String, List<String>> headers : headersFromTargetMap.entrySet()) {
 			sb.append("   ");
@@ -541,13 +551,16 @@ public class ReverseProxy extends HttpServlet {
 		}
 	}
 	
-	private static void dumpReturningHeadersToClient(String redirectUrl, StringBuilder sb) {
+	private static void dumpReturningHeadersToClient(boolean missingStatusCode, String redirectUrl, StringBuilder sb) {
 		sb.append("----- <= J2TRP -----");
 		sb.append(LS);
 		if (redirectUrl != null && !redirectUrl.isEmpty()) {
 			sb.append("   ");
 			sb.append("Location: ");
 			sb.append(redirectUrl);
+		}
+		else if (missingStatusCode) {
+			sb.append("   502 (Bad Gateway)");
 		}
 		else {
 			sb.append("   None.");

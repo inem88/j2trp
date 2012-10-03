@@ -281,4 +281,14 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		
 		Assert.assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
 	}
+	
+	public void testSSLWithError() throws Exception {
+		MockHttpServletRequest req = createSslReq("GET", "/j2trp_ssl/fake_an_error");
+		MockHttpServletResponse resp = new MockHttpServletResponse();
+		HttpServlet sslReverseProxyServlet = super.applicationContext.getBean(
+				"sslReverseProxy", HttpServlet.class);
+		sslReverseProxyServlet.service(req, resp);
+		
+		Assert.assertEquals(HttpServletResponse.SC_BAD_GATEWAY, resp.getStatus());
+	}
 }
