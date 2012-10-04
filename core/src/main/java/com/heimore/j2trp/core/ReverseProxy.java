@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -31,6 +30,7 @@ import org.apache.log4j.Logger;
 
 public class ReverseProxy extends HttpServlet {
 	
+	private static final int BUFFER_SIZE = 1024;
 	private static final String CONNECTION_HDR = "Connection";
 	private static final String COOKIE_HDR = "Cookie: ";
 	private static final String LOCATION_HDR = "Location";
@@ -54,8 +54,8 @@ public class ReverseProxy extends HttpServlet {
 	private static final int[] WELL_KNOWN_PORT = new int[] { 80, 443 }; // Array must be sorted.
 	private static final byte[] HEADER_END_MARKER = new byte[] { (byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a };
 	private static final String XFF_HEADER_NAME = "X-Forwarded-For";
-	private static final byte[] BAD_GATEWAY_ERROR = "502 Bad gateway".getBytes(ASCII);	
-    @SuppressWarnings("unchecked")
+
+	@SuppressWarnings("unchecked")
     protected static void copyHeaders (Map<String, List<String>> outgoingHeaders, Map<String, TouchedHeader> touchedHeaders, OutputStream ps, HttpServletRequest request) throws IOException {
     	
     	boolean foundXFFHeaders = false;
@@ -323,7 +323,7 @@ public class ReverseProxy extends HttpServlet {
 	
 	public void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		Socket socket = null;
-		byte[] byteBuffer = new byte[1024];
+		byte[] byteBuffer = new byte[BUFFER_SIZE];
 		long start = System.currentTimeMillis();
 		try {
 			// Connect to target.
@@ -335,15 +335,15 @@ public class ReverseProxy extends HttpServlet {
 				String msg = String.format("Target server not reachable, your personal error code is %s, please contact support and provide this error code.", errorCode);
 				String logMsg = String.format("Generated error code %s", errorCode);
 				LOG.error(logMsg, e);
-				response.sendError(HttpServletResponse.SC_BAD_GATEWAY, msg);
+				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, msg);
 				return;
 			}
 			catch (IOException e) {
 				String errorCode = UUID.randomUUID().toString();
-				String msg = String.format("I/O error to the target, your personal error code is %s, please contact support and provide this error code.", errorCode);
+				String msg = String.format("I/O error when connecting the target, your personal error code is %s, please contact support and provide this error code.", errorCode);
 				String logMsg = String.format("Generated error code %s", errorCode);
 				LOG.error(logMsg, e);
-				response.sendError(HttpServletResponse.SC_BAD_GATEWAY, msg);
+				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, msg);
 				return;
 			}
 			long connectStamp = System.currentTimeMillis();

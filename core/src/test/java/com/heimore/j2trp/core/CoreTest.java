@@ -69,6 +69,14 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		
 		sslServer = new SSLServer(65000);
 		sslServer.start();
+		
+		// Faulty reverse proxy setup:
+		HttpServlet faultyReverseProxyServlet = super.applicationContext.getBean("faultyReverseProxy", HttpServlet.class);
+		MockServletContext faultyServletCtx = new MockServletContext();
+		faultyServletCtx.setContextPath("/j2trp_faulty");
+		MockServletConfig faultyServletConfig = new MockServletConfig(faultyServletCtx);
+		faultyServletConfig.addInitParameter("TARGET_URL", "https://nonexistent.host.drok");
+		faultyReverseProxyServlet.init(faultyServletConfig);
 	}
 
 	@AfterClass
@@ -290,5 +298,22 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		sslReverseProxyServlet.service(req, resp);
 		
 		Assert.assertEquals(HttpServletResponse.SC_BAD_GATEWAY, resp.getStatus());
+	}
+	
+	public void testFaultyRevProxy() throws Exception {
+		MockHttpServletRequest req = new MockHttpServletRequest("GET", "/j2trp_faulty/somepage.htm");
+		req.setServerName("my.revproxy.org");
+		req.setScheme("http");
+		req.setProtocol("HTTP/1.0");
+		req.setServerPort(4711);
+		req.setContextPath("/j2trp_faulty");
+		
+		MockHttpServletResponse resp = new MockHttpServletResponse();
+		HttpServlet faultyReverseProxyServlet = super.applicationContext.getBean(
+				"faultyReverseProxy", HttpServlet.class);
+		faultyReverseProxyServlet.service(req, resp);
+		
+		
+		Assert.assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resp.getStatus());
 	}
 }
