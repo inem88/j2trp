@@ -90,7 +90,7 @@ public class SSLServer implements Runnable {
 				// First line should be the HTTP verb, resource and version.
 				System.out.println("line: " + line);
 				
-				if (line.contains("/fake_an_error")) {
+				if (line == null || line.contains("/fake_an_error")) {
 					throw new IOException("Fake an I/O error.");
 				}
 				OutputStream os = socket.getOutputStream();

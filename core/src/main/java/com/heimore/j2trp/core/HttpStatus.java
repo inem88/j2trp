@@ -11,11 +11,11 @@ class HttpStatus {
 		status = returnLine.substring(indexOfCodeEnd + 1);
 	}
 	
-	public String getStatus() {
+	String getStatus() {
 		return status;
 	}
 	
-	public int getCode() {
+	int getCode() {
 		return code;
 	}
 }
