@@ -1,19 +1,15 @@
 package com.heimore.j2trp.core;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.SocketException;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
-
-import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 
 public class SSLServer implements Runnable {
 
