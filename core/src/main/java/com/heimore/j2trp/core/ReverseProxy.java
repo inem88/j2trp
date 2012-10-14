@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -40,14 +42,6 @@ public class ReverseProxy extends HttpServlet {
 	private static final String HOST_HDR = "Host";
 	private static final Logger LOG = Logger.getLogger(ReverseProxy.class);
 	private static final String LS = System.getProperty("line.separator");
-	
-	private String targetHost;
-	private int targetPort;
-	private String targetBaseUri;
-	private String baseUri;
-	private boolean useSsl;
-
-	
 	private static final long serialVersionUID = 1L;
 	private static final Charset ASCII = Charset.forName("US-ASCII");
 	private static final byte[] CR_LF = new byte[] { (byte) 0x0d, (byte) 0x0a };
@@ -55,6 +49,41 @@ public class ReverseProxy extends HttpServlet {
 	private static final byte[] HEADER_END_MARKER = new byte[] { (byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a };
 	private static final String XFF_HEADER_NAME = "X-Forwarded-For";
 
+	/**
+	 * The address of the upstream server.
+	 */
+	private String targetHost;
+
+	/**
+	 * The port of the upstream server.
+	 */
+	private int targetPort;
+
+	/**
+	 * The base URI of the upstream server.
+	 */
+	private String targetBaseUri;
+
+	/**
+	 * The base URI of this proxy.
+	 */
+	private String baseUri;
+
+	/**
+	 * Whether or not to use SSL for the upstream server or not.
+	 */
+	private boolean useSsl;
+
+	
+	/**
+	 * This method copies headers from the incoming request to the request going to the upstream server.
+	 * It also adds or appends the XFF header to the outgoing request as per specification. 
+	 * @param outgoingHeaders the Map where the outgoing headers should be copied to.
+	 * @param touchedHeaders a Map that keeps track of which headers have been touched (added/changed).
+	 * @param ps The output stream of the upstream server.
+	 * @param request The incoming request to the proxy.
+	 * @throws IOException If there's an error while writing on the output stream.
+	 */
 	@SuppressWarnings("unchecked")
     protected static void copyHeaders (Map<String, List<String>> outgoingHeaders, Map<String, TouchedHeader> touchedHeaders, OutputStream ps, HttpServletRequest request) throws IOException {
     	
@@ -95,6 +124,7 @@ public class ReverseProxy extends HttpServlet {
     	print(ps, XFF_HEADER_NAME);
     	print(ps, HDR_SEPARATOR);
     	
+    	// If there's already a XFF header present, append this proxy's address to it. Otherwise, just add u 
     	if (foundXFFHeaders) {
     		for (Enumeration<String> headerValues = request.getHeaders(XFF_HEADER_NAME); headerValues.hasMoreElements(); ) {
     			xffHeader.append(headerValues.nextElement());
@@ -127,6 +157,13 @@ public class ReverseProxy extends HttpServlet {
     	
     }
     
+    /**
+     * Converts the incoming cookies to the outgoing the request. Any cookie path is also rewritten.
+     * @param cookies The cookies to convert.
+     * @param targetBaseUri The base URI for the upstream server.
+     * @param baseUri The base URI for this proxy.
+     * @return A list of converted cookies, ready to be sent to the upstream server.
+     */
     protected static List<Cookie> convertCookies (List<HttpCookie> cookies, String targetBaseUri, String baseUri) {
     	
     	List<Cookie> result = new ArrayList<Cookie>(cookies.size());
@@ -155,6 +192,13 @@ public class ReverseProxy extends HttpServlet {
     	return result;
     }
     
+    /**
+     * Adds the cookies coming back from the upstream server to the response object that is going back to the client.
+     * @param rawCookieValues a List of raw cookie headers from the returning HTTP response.
+     * @param resp The response object that goes back to the client.
+     * @param targetBaseUri The base URI of the upstream server.
+     * @param baseUri The base URI of this proxy.
+     */
     protected static void copyCookiesFromResponse (List<String> rawCookieValues, HttpServletResponse resp, String targetBaseUri, String baseUri) {
     	List<HttpCookie> allCookies = new ArrayList<HttpCookie>();
     	for (String rawCookie : rawCookieValues) {
@@ -167,6 +211,20 @@ public class ReverseProxy extends HttpServlet {
     	
     }
     
+    /**
+     * Copies the headers coming back in the response from the upstream server. 
+     * <p>
+     * Note: the cookies are handled by {@linkplain #copyCookiesFromResponse(List, HttpServletResponse, String, String)}
+     * </p>
+     * <p>
+     * The Location header is <b>not</b> copied since it requires special handling as it needs to be rewritten. 
+     * </p>
+     * @param headers The headers coming from the response from the upstream server.
+     * @param resp The response object going back to the client.
+     * @param targetBaseUri The base URI of the upstream server.
+     * @param baseUri The base URI of this proxy.
+     * @throws IOException If there's an error reading the response object.
+     */
     protected static void copyHeadersFromResponse (Map<String, List<String>> headers, HttpServletResponse resp, String targetBaseUri, String baseUri) throws IOException {
     	for (Map.Entry<String, List<String>> header : headers.entrySet()) {
     		if (header.getKey().equalsIgnoreCase(SET_COOKIE_HDR)) {
@@ -188,6 +246,13 @@ public class ReverseProxy extends HttpServlet {
     	}
     }
 
+    /**
+     * Utility method that copies the cookies from the incoming request and is to be relayed to the upstream server. 
+     * @param outgoingHeaders The resulting headers that are copied by this method.  
+     * @param ps The output stream of the upstream server.
+     * @param request The incoming request object.
+     * @throws IOException If there's an error while writing on the upstream server's socket.
+     */
     protected static void copyCookies (Map<String, List<String>> outgoingHeaders, OutputStream ps, HttpServletRequest request) throws IOException {
     	Cookie[] cookies = request.getCookies();
     	
@@ -210,6 +275,11 @@ public class ReverseProxy extends HttpServlet {
     	}
     }
     
+    /**
+     * Is the supplied port a known one (80 or 443) or not.
+     * @param port The port.
+     * @return true of the port is "well-known", false otherwise.
+     */
     static boolean isWellKnownPort (int port) {
     	return (Arrays.binarySearch(WELL_KNOWN_PORT, port) >= 0);
     }
@@ -226,14 +296,31 @@ public class ReverseProxy extends HttpServlet {
 		execute(req, resp);
 	}
 
+	/**
+	 * Prints the data as ASCII to the supplied output stream.
+	 * @param os The output stream
+	 * @param data The data.
+	 * @throws IOException If there's an error while writing on the output stream.
+	 */
 	static void print (OutputStream os, String data) throws IOException {
 		os.write(data.getBytes(ASCII));
 	}
 	
+	/**
+	 * Prints a CRLF to the supplied output stream.
+	 * @param os The output stream.
+	 * @throws IOException If there's an error while writing on the output stream.
+	 */
 	static void crlf (OutputStream os) throws IOException {
 		os.write(CR_LF);
 	}
 	
+	/**
+	 * Utility method for adding a header to the supplied Map.
+	 * @param map The header map.
+	 * @param key The header name.
+	 * @param value The header value.
+	 */
 	static void addHeader (Map<String, List<String>> map, String key, String value) {
 		List<String> headerValue = map.get(key);
 		if (headerValue == null) {
@@ -243,6 +330,13 @@ public class ReverseProxy extends HttpServlet {
 		headerValue.add(value);
 	}
 	
+	/**
+	 * Parses the response headers including the HTTP response code sent back from the upstream server.
+	 * The first line (excluding the CRLF marker), contains the response code and the status message.
+	 * @param headersIncCrlf The string including all the headers, including the CRLF marker. 
+	 * @param parsedHeaders the Map that will contain the parsed headers (excluding the status code).
+	 * @return The HTTP status
+	 */
 	static HttpStatus parseHeaders (String headersIncCrlf, Map<String, List<String>> parsedHeaders) {
 		
 		String[] headers = headersIncCrlf.split("\\x0d\\x0a");
@@ -261,6 +355,11 @@ public class ReverseProxy extends HttpServlet {
 		return result;
 	}
 	
+	/**
+	 * Utility method for rewriting the proxied URI.
+	 * @param srcUri The source URI which to base the rewrite on.
+	 * @return The proxied URI.
+	 */
 	String getProxiedUri (String srcUri) {
 		if (srcUri.startsWith(baseUri)) {
 			StringBuilder sb = new StringBuilder(srcUri);
@@ -271,6 +370,12 @@ public class ReverseProxy extends HttpServlet {
 		return srcUri;
 	}
 	
+    /**
+     * Utility method that pretty-prints an Enumeration.
+     * @param bag The collection to pretty-print.
+     * @return The values of the Enumeration as one string. 
+     * An empty string ("") is returned if the Enumeration is empty.
+     */
     static String dumpEnumeration (Enumeration<String> bag) {
 		StringBuilder sb = new StringBuilder();
 		
@@ -291,6 +396,12 @@ public class ReverseProxy extends HttpServlet {
 		return sb.toString();
 	}
 	
+	/**
+	 * Constructs a redirection URL from the Location header sent back from the upstream server. 
+	 * @param req The request from the client.
+	 * @param translatedPath The translated URI that should be sent back to the client.
+	 * @return The complete URL that should go into the Location header back to the client.
+	 */
 	protected String buildRedirectUrl (HttpServletRequest req, String translatedPath) {
 		StringBuilder sb = new StringBuilder();
 		
@@ -308,19 +419,37 @@ public class ReverseProxy extends HttpServlet {
 		return sb.toString();
 	}
 	
-	private Socket createSocket() throws UnknownHostException, IOException {
+	/**
+	 * Utility method that connects a socket (plain-text or SSL) to the upstream server.
+	 * @return A socket connected to the upstream server.
+	 * @throws UnknownHostException If the upstream server address cannot be resolved or connected to. 
+	 * @throws IOException If there's a low-level I/O error while creating the socket.
+	 */
+	protected Socket createSocket() throws UnknownHostException, IOException {
 		
 		Socket result;
 		if (useSsl) {
-			result = SSLSocketFactory.getDefault().createSocket(targetHost, targetPort);
+			SSLSocket sslSocket = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
+			sslSocket.connect(new InetSocketAddress(targetHost, targetPort), 30000); // TODO: Parameterize this timeout
+			LOG.debug(String.format("Connected to %s:%d using SSL, cipher suite in session: %s", targetHost, targetPort, sslSocket.getSession().getCipherSuite()));
+			result = sslSocket;
 		}
 		else {
-			result = new Socket(targetHost, targetPort);
+			result = new Socket();
+			result.connect(new InetSocketAddress(targetHost, targetPort), 30000); // TODO: Parameterize this timeout
+			LOG.debug(String.format("Connected to %s:%d using a regular socket.", targetHost, targetPort));
 		}
 		
 		return result;
 	}
 	
+	/**
+	 * Main method of this proxy that does all the work.
+	 * @param request The request object coming in from the client.
+	 * @param response THe response object going back to the client.
+	 * @throws ServletException If there's an error with the request and response object.
+	 * @throws IOException If there's a low-level I/O error while interacting with the upstream server.
+	 */
 	public void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		Socket socket = null;
 		byte[] byteBuffer = new byte[BUFFER_SIZE];
@@ -449,7 +578,10 @@ public class ReverseProxy extends HttpServlet {
 					if (!headerAlreadyWritten) {
 						response.setStatus(httpStatus.getCode());
 						copyHeadersFromResponse(headersFromTargetMap, response, targetBaseUri, baseUri);
-						if (httpStatus.getCode() == HttpServletResponse.SC_FOUND) {
+						if (httpStatus.getCode() == HttpServletResponse.SC_FOUND || 
+						    httpStatus.getCode() == HttpServletResponse.SC_MOVED_PERMANENTLY || 
+						    httpStatus.getCode() == HttpServletResponse.SC_SEE_OTHER ||
+						    httpStatus.getCode() == HttpServletResponse.SC_TEMPORARY_REDIRECT) {
 							URL redirectedUrl = new URL(headersFromTargetMap.get(LOCATION_HDR).get(0));
 							String targetPath = redirectedUrl.getFile();
 							String translatedPath = targetPath;
@@ -514,6 +646,12 @@ public class ReverseProxy extends HttpServlet {
 		}
 	}
 
+	/**
+	 * Internal method that dumps the returning headers from the upstream server that will ultimately go into the log.
+	 * @param httpStatus The status from the upstream server. 
+	 * @param headersFromTargetMap The headers from the upstream servers.
+	 * @param sb The buffer that this method dumps the data into.
+	 */
 	private static void dumpReturningHeadersFromTarget(HttpStatus httpStatus, Map<String, List<String>> headersFromTargetMap, StringBuilder sb) {
 		sb.append("----- <= J2TRP <= -----");
 		sb.append(LS);
@@ -549,6 +687,13 @@ public class ReverseProxy extends HttpServlet {
 		}
 	}
 	
+	/**
+	 * Internal method that dumps the returning headers to the client that will ultimately go into the log.
+	 * @param missingStatusCode If the status code from the upstream server is missing, for instance, due to the
+	 * communication being aborted.
+	 * @param redirectUrl The redirect URL, if any.
+	 * @param sb The buffer that this method dumps the data into.
+	 */
 	private static void dumpReturningHeadersToClient(boolean missingStatusCode, String redirectUrl, StringBuilder sb) {
 		sb.append("----- <= J2TRP -----");
 		sb.append(LS);
@@ -566,6 +711,13 @@ public class ReverseProxy extends HttpServlet {
 		sb.append(LS);
 	}
 
+	/**
+	 * Internal method that dumps the headers going to the upstream server that will ultimately go into the log.
+	 * @param httpVerb The HTTP verb, requested URI and protocol version.
+	 * @param outgoingHeaders The headers as-is.
+	 * @param touchedHeaders  The headers that have been added or changed.
+	 * @param sb The buffer that this method dumps the data into.
+	 */
 	private static void dumpOutgoingHeaders(String httpVerb, Map<String, List<String>> outgoingHeaders, Map<String, TouchedHeader> touchedHeaders, StringBuilder sb) {
 		sb.append("---- J2TRP => -----");
 		sb.append(LS);
@@ -596,6 +748,11 @@ public class ReverseProxy extends HttpServlet {
 		}
 	}
 	
+	/**
+	 * Internal method that dumps the headers coming from the client that will ultimately go into the log.
+	 * @param request The request object from the client.
+	 * @param sb The buffer that this method dumps the data into.
+	 */
 	@SuppressWarnings("unchecked")
 	private static void dumpIncomingHeaders(HttpServletRequest request, StringBuilder sb) {
 		sb.append("----- => J2TRP -----");
@@ -633,6 +790,11 @@ public class ReverseProxy extends HttpServlet {
 		}
 	}
 	
+	/**
+	 * Servlet initialization method for this proxy.
+	 * @param config The configuration object coming from the Servlet container.
+	 * @throws ServletException If there's an error while extracting the configuration.
+	 */
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);

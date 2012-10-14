@@ -84,7 +84,6 @@ public class SSLServer implements Runnable {
 				BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
 				String line = br.readLine();
 				// First line should be the HTTP verb, resource and version.
-				System.out.println("line: " + line);
 				
 				if (line == null || line.contains("/fake_an_error")) {
 					throw new IOException("Fake an I/O error.");
