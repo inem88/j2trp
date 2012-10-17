@@ -35,7 +35,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 	public CoreTest() {
 		svcContainer = new EmbeddedServiceContainer(
 				EmbeddedServiceContainer.DEFAULT_SERVLET_LISTENER,
-				"classpath:mockTargetServer.xml", "com.heimore",
+				"classpath:mockTargetServer.xml", "com.j2trp",
 				EmbeddedServiceContainer.BASE_URI, PORT, "/sfibonusadmin");
 	}
 
