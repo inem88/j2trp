@@ -11,7 +11,7 @@
     <javaee:description></javaee:description>
     <javaee:display-name>ReverseProxy</javaee:display-name>
     <servlet-name>ReverseProxy</servlet-name>
-    <servlet-class>com.heimore.j2trp.core.ReverseProxy</servlet-class>
+    <servlet-class>com.j2trp.core.ReverseProxy</servlet-class>
     
   </servlet>
   <servlet-mapping>

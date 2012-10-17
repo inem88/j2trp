@@ -1,4 +1,4 @@
-package com.heimore.j2trp.core;
+package com.j2trp.core;
 
 import java.io.IOException;
 import java.net.URI;

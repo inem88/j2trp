@@ -1,4 +1,4 @@
-package com.heimore.j2trp.core;
+package com.j2trp.core;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,6 +23,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.heimore.test.util.EmbeddedServiceContainer;
+import com.j2trp.core.ReverseProxy;
 import com.sun.grizzly.filter.SSLReadFilter;
 
 @ContextConfiguration(locations = "classpath:reverseProxyContext.xml")
