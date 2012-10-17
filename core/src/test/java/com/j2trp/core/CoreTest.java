@@ -10,21 +10,19 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
-
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockServletConfig;
 import org.springframework.mock.web.MockServletContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.heimore.test.util.EmbeddedServiceContainer;
 import com.j2trp.core.ReverseProxy;
-import com.sun.grizzly.filter.SSLReadFilter;
 
 @ContextConfiguration(locations = "classpath:reverseProxyContext.xml")
 @Test
