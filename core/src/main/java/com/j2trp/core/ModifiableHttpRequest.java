@@ -2,6 +2,7 @@ package com.j2trp.core;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
 import java.util.Enumeration;
@@ -37,6 +38,28 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	String scheme;
 	Integer port;
 	String serverName;
+	String characterEncoding;
+	int contentLength;
+	ServletInputStream is;
+	String localAddr;
+	Locale locale;
+	String localName;
+	int localPort;
+	Map<String, String> parameterMap;
+	BufferedReader reader;
+	String realPath;
+	String remoteAddr;
+	String remoteHost;
+	int remotePort;
+	ServletRequest servletRequest;
+	RequestDispatcher requestDispatcher;
+	String requestedSessionId;
+	String requestURI;
+	StringBuffer requestURL;
+	int serverPort;
+	String servletPath;
+	HttpSession session;
+	boolean secure;
 	
 	
 	public ModifiableHttpRequest(HttpServletRequest request) {
@@ -50,8 +73,7 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public Cookie[] getCookies() {
-		// TODO Auto-generated method stub
-		return super.getCookies();
+		return Toolbox.merge(super.getCookies(), cookies, Cookie[].class);
 	}
 
 	@Override
