@@ -3,7 +3,7 @@
   <groupId>com.j2trp</groupId>
   <artifactId>core</artifactId>
   <packaging>war</packaging>
-  <version>1.0.1</version>
+  <version>1.0.2-SNAPSHOT</version>
   <name>J2 Transparent Reverse Proxy</name>
   <url>http://maven.apache.org</url>
   <properties>
