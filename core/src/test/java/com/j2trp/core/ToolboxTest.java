@@ -1,5 +1,9 @@
 package com.j2trp.core;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -28,4 +32,33 @@ public class ToolboxTest {
 		Assert.assertEquals(one, Toolbox.getValue(one, null, Integer.class));
 		Assert.assertEquals(two, Toolbox.getValue(one, two, Integer.class));
 	}
+	
+	public void testGetValueWithDefault() {
+		Long defaultValue = -1L;
+		
+		Assert.assertEquals(defaultValue, Toolbox.getValue(null, null, -1L, Long.class));
+		Assert.assertSame(defaultValue, Toolbox.getValue(null, null, defaultValue, Long.class));
+	}
+	
+	public void testMergeCollection() {
+		Enumeration<String> enum123 = Collections.enumeration(Arrays.asList("1", "2", "3"));
+		Enumeration<String> enum456 = Collections.enumeration(Arrays.asList("4", "5", "6"));
+		Enumeration<String> control = Collections.enumeration(Arrays.asList("1", "2", "3", "4", "5", "6"));
+		
+		Enumeration<String> enumUnderTest = Toolbox.mergeCollection(enum123, enum456);
+		
+		Assert.assertTrue(enumUnderTest.hasMoreElements());
+		
+		while (control.hasMoreElements()) {
+			Assert.assertEquals(enumUnderTest.nextElement(), control.nextElement());
+		}
+		
+		enum123 = Collections.enumeration(Arrays.asList("1", "2", "3"));
+		control = enum123;
+		Assert.assertSame(control, Toolbox.mergeCollection(enum123, null));
+		
+		
+		Enumeration<?> testResult = Toolbox.mergeCollection(null, null);
+	}
+	
 }

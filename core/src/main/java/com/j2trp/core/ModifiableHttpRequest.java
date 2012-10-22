@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -24,8 +26,7 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
 	String authType;
 	Cookie[] cookies;
-	Long dateHeader;
-	Map<String, String> headers = new HashMap<String, String>();
+	Map<String, List<String>> headers = new HashMap<String, List<String>>();
 	String method;
 	String pathInfo;
 	String pathTranslated;
@@ -78,20 +79,18 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public long getDateHeader(String name) {
-		// TODO Auto-generated method stub
-		return super.getDateHeader(name);
+		return Toolbox.getValue(super.getDateHeader(name), Long.parseLong(headers.get(name).get(0)), -1L, Long.class);
 	}
 
 	@Override
 	public String getHeader(String name) {
-		// TODO Auto-generated method stub
-		return super.getHeader(name);
+		return Toolbox.getValue(super.getHeader(name), headers.get(name), String.class);
 	}
 
 	@Override
-	public Enumeration getHeaders(String name) {
-		// TODO Auto-generated method stub
-		return super.getHeaders(name);
+	@SuppressWarnings("unchecked")
+	public Enumeration<String> getHeaders(String name) {
+		return Toolbox.mergeCollection(super.getHeaders(name), Collections.enumeration(headers.get(name)));
 	}
 
 	@Override
