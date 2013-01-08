@@ -2,7 +2,6 @@ package com.j2trp.core;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
 import java.util.Collections;
@@ -21,6 +20,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpSession;
+
+import com.heimore.exa.sso.UserPrincipalKeys;
 
 public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
@@ -61,7 +62,10 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	String servletPath;
 	HttpSession session;
 	boolean secure;
-	
+	boolean requestedSessionIdValue;
+	boolean requestedSessionIdFromCookie;
+	boolean requestedSessionIdFromCookieUrl;
+	boolean requestedSessionIdFromCookieURL;
 	
 	public ModifiableHttpRequest(HttpServletRequest request) {
 		super(request);
@@ -94,135 +98,117 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	}
 
 	@Override
-	public Enumeration getHeaderNames() {
-		// TODO Auto-generated method stub
-		return super.getHeaderNames();
+	@SuppressWarnings("unchecked")
+	public Enumeration<String> getHeaderNames() {
+		return Toolbox.mergeCollection(super.getHeaderNames(), Collections.enumeration(headers.keySet()));
 	}
 
 	@Override
 	public int getIntHeader(String name) {
-		// TODO Auto-generated method stub
-		return super.getIntHeader(name);
+		return Toolbox.getValue(super.getIntHeader(name), Integer.parseInt(headers.get(name).get(0)), -1, Integer.class);
 	}
 
 	@Override
 	public String getMethod() {
-		// TODO Auto-generated method stub
-		return super.getMethod();
+		return Toolbox.getValue(super.getMethod(), method, String.class);
 	}
 
 	@Override
 	public String getPathInfo() {
-		// TODO Auto-generated method stub
-		return super.getPathInfo();
+		return Toolbox.getValue(super.getPathInfo(), pathInfo, String.class);
 	}
 
 	@Override
 	public String getPathTranslated() {
-		// TODO Auto-generated method stub
-		return super.getPathTranslated();
+		return Toolbox.getValue(super.getPathTranslated(), pathTranslated, String.class);
 	}
 
 	@Override
 	public String getContextPath() {
-		// TODO Auto-generated method stub
-		return super.getContextPath();
+		return Toolbox.getValue(super.getContextPath(), contextPath, String.class);
 	}
 
 	@Override
 	public String getQueryString() {
-		// TODO Auto-generated method stub
-		return super.getQueryString();
+		return Toolbox.getValue(super.getQueryString(), queryString, String.class);
 	}
 
 	@Override
 	public String getRemoteUser() {
-		// TODO Auto-generated method stub
-		return super.getRemoteUser();
+		return Toolbox.getValue(super.getRemoteUser(), remoteUser, String.class);
 	}
 
 	@Override
 	public boolean isUserInRole(String role) {
-		// TODO Auto-generated method stub
-		return super.isUserInRole(role);
+		return Toolbox.getValue(super.isUserInRole(role), userInRole.contains(role), Boolean.class);
 	}
 
 	@Override
 	public Principal getUserPrincipal() {
-		// TODO Auto-generated method stub
-		return super.getUserPrincipal();
+		return Toolbox.getValue(super.getUserPrincipal(), principal, Principal.class);
 	}
 
 	@Override
 	public String getRequestedSessionId() {
-		// TODO Auto-generated method stub
-		return super.getRequestedSessionId();
+		return Toolbox.getValue(super.getRequestedSessionId(), requestedSessionId, String.class);
 	}
 
 	@Override
 	public String getRequestURI() {
-		// TODO Auto-generated method stub
-		return super.getRequestURI();
+		return Toolbox.getValue(super.getRequestURI(), requestURI, String.class);
 	}
 
 	@Override
 	public StringBuffer getRequestURL() {
-		// TODO Auto-generated method stub
-		return super.getRequestURL();
+		return Toolbox.getValue(super.getRequestURL(), requestURL, StringBuffer.class);
 	}
 
 	@Override
 	public String getServletPath() {
-		// TODO Auto-generated method stub
-		return super.getServletPath();
+		return Toolbox.getValue(super.getServletPath(), servletPath, String.class);
 	}
 
 	@Override
 	public HttpSession getSession(boolean create) {
-		// TODO Auto-generated method stub
+		if (session != null) {
+			return session;
+		}
 		return super.getSession(create);
 	}
 
 	@Override
 	public HttpSession getSession() {
-		// TODO Auto-generated method stub
-		return super.getSession();
+		return Toolbox.getValue(super.getSession(), session, HttpSession.class);
 	}
 
 	@Override
 	public boolean isRequestedSessionIdValid() {
-		// TODO Auto-generated method stub
-		return super.isRequestedSessionIdValid();
+		return Toolbox.getValue(super.isRequestedSessionIdValid(), requestedSessionIdValue, Boolean.class); 
 	}
 
 	@Override
 	public boolean isRequestedSessionIdFromCookie() {
-		// TODO Auto-generated method stub
-		return super.isRequestedSessionIdFromCookie();
+		return Toolbox.getValue(super.isRequestedSessionIdFromCookie(), requestedSessionIdFromCookie, Boolean.class);
 	}
 
 	@Override
 	public boolean isRequestedSessionIdFromURL() {
-		// TODO Auto-generated method stub
-		return super.isRequestedSessionIdFromURL();
+		return Toolbox.getValue(super.isRequestedSessionIdFromURL(), requestedSessionIdFromCookieURL, Boolean.class);
 	}
 
 	@Override
 	public boolean isRequestedSessionIdFromUrl() {
-		// TODO Auto-generated method stub
-		return super.isRequestedSessionIdFromUrl();
+		return Toolbox.getValue(super.isRequestedSessionIdFromUrl(), requestedSessionIdFromCookieUrl, Boolean.class);
 	}
 
 	@Override
 	public ServletRequest getRequest() {
-		// TODO Auto-generated method stub
-		return super.getRequest();
+		return Toolbox.getValue(super.getRequest(), servletRequest, ServletRequest.class);
 	}
 
 	@Override
 	public void setRequest(ServletRequest request) {
-		// TODO Auto-generated method stub
-		super.setRequest(request);
+		servletRequest = request;
 	}
 
 	@Override
