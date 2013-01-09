@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -96,13 +97,13 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	@Override
 	@SuppressWarnings("unchecked")
 	public Enumeration<String> getHeaders(String name) {
-		return Toolbox.mergeCollection(super.getHeaders(name), Collections.enumeration(headers.get(name)));
+		return Toolbox.mergeCollection(super.getHeaders(name), Toolbox.safeEnumerator(headers.get(name)));
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public Enumeration<String> getHeaderNames() {
-		return Toolbox.mergeCollection(super.getHeaderNames(), Collections.enumeration(headers.keySet()));
+		return Toolbox.mergeCollection(super.getHeaderNames(), Toolbox.safeEnumerator(headers.keySet()));
 	}
 
 	@Override
@@ -361,6 +362,178 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	@Override
 	public int getLocalPort() {
 		return Toolbox.getValue(super.getLocalPort(), localPort, Integer.class);
+	}
+
+	public void setAuthType(String authType) {
+		this.authType = authType;
+	}
+
+	public void setCookies(Cookie[] cookies) {
+		this.cookies = cookies;
+	}
+
+	public void addHeader(String header, String value) {
+		List<String> values = headers.get(header);
+		
+		if (values == null) {
+			values = new ArrayList<String>();
+			headers.put(header, values);
+		}
+		values.add(value);
+	}
+
+	public void setMethod(String method) {
+		this.method = method;
+	}
+
+	public void setPathInfo(String pathInfo) {
+		this.pathInfo = pathInfo;
+	}
+
+	public void setPathTranslated(String pathTranslated) {
+		this.pathTranslated = pathTranslated;
+	}
+
+	public void setContextPath(String contextPath) {
+		this.contextPath = contextPath;
+	}
+
+	public void setQueryString(String queryString) {
+		this.queryString = queryString;
+	}
+
+	public void setRemoteUser(String remoteUser) {
+		this.remoteUser = remoteUser;
+	}
+
+	public void setPrincipal(Principal principal) {
+		this.principal = principal;
+	}
+
+	public void setProtocol(String protocol) {
+		this.protocol = protocol;
+	}
+
+	public void setScheme(String scheme) {
+		this.scheme = scheme;
+	}
+
+	public void setPort(Integer port) {
+		this.port = port;
+	}
+
+	public void setServerName(String serverName) {
+		this.serverName = serverName;
+	}
+
+	public void setContentLength(int contentLength) {
+		this.contentLength = contentLength;
+	}
+
+	public void setIs(ServletInputStream is) {
+		this.is = is;
+	}
+
+	public void setLocalAddr(String localAddr) {
+		this.localAddr = localAddr;
+	}
+
+	public void setLocale(Locale locale) {
+		this.locale = locale;
+	}
+
+	public void setLocalName(String localName) {
+		this.localName = localName;
+	}
+
+	public void setLocalPort(int localPort) {
+		this.localPort = localPort;
+	}
+
+	public void setParameterMap(Map<String, String> parameterMap) {
+		this.parameterMap = parameterMap;
+	}
+
+	public void setReader(BufferedReader reader) {
+		this.reader = reader;
+	}
+
+	public void setRealPath(String realPath) {
+		this.realPath = realPath;
+	}
+
+	public void setRemoteAddr(String remoteAddr) {
+		this.remoteAddr = remoteAddr;
+	}
+
+	public void setRemoteHost(String remoteHost) {
+		this.remoteHost = remoteHost;
+	}
+
+	public void setRemotePort(int remotePort) {
+		this.remotePort = remotePort;
+	}
+
+	public void setServletRequest(ServletRequest servletRequest) {
+		this.servletRequest = servletRequest;
+	}
+
+	public void setRequestDispatcher(RequestDispatcher requestDispatcher) {
+		this.requestDispatcher = requestDispatcher;
+	}
+
+	public void setRequestedSessionId(String requestedSessionId) {
+		this.requestedSessionId = requestedSessionId;
+	}
+
+	public void setRequestURI(String requestURI) {
+		this.requestURI = requestURI;
+	}
+
+	public void setRequestURL(StringBuffer requestURL) {
+		this.requestURL = requestURL;
+	}
+
+	public void setServerPort(int serverPort) {
+		this.serverPort = serverPort;
+	}
+
+	public void setServletPath(String servletPath) {
+		this.servletPath = servletPath;
+	}
+
+	public void setSession(HttpSession session) {
+		this.session = session;
+	}
+
+	public void setSecure(boolean secure) {
+		this.secure = secure;
+	}
+
+	public void setRequestedSessionIdValue(boolean requestedSessionIdValue) {
+		this.requestedSessionIdValue = requestedSessionIdValue;
+	}
+
+	public void setRequestedSessionIdFromCookie(boolean requestedSessionIdFromCookie) {
+		this.requestedSessionIdFromCookie = requestedSessionIdFromCookie;
+	}
+
+	public void setRequestedSessionIdFromCookieUrl(
+			boolean requestedSessionIdFromCookieUrl) {
+		this.requestedSessionIdFromCookieUrl = requestedSessionIdFromCookieUrl;
+	}
+
+	public void setRequestedSessionIdFromCookieURL(
+			boolean requestedSessionIdFromCookieURL) {
+		this.requestedSessionIdFromCookieURL = requestedSessionIdFromCookieURL;
+	}
+
+	public void setAttributes(Map<String, Object> attributes) {
+		this.attributes = attributes;
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
 	}
 	
 	

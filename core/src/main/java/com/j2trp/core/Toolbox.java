@@ -2,11 +2,13 @@ package com.j2trp.core;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
 public final class Toolbox {
+	
 	private Toolbox() { }
 	
 	public static <T> T getValue (Object orgValue, Object overriddenValue, Class<T> clazz) {
@@ -42,6 +44,15 @@ public final class Toolbox {
 		System.arraycopy(overriddenValue, 0, result, orgValue.length, overriddenLength);
 		
 		return clazz.cast(result);
+	}
+	
+	public static <T> Enumeration<T> safeEnumerator (Collection<T> coll) {
+		
+		if (coll == null) {
+			return new EmptyEnumeration<T>();
+		}
+		
+		return Collections.enumeration(coll);
 	}
 	
 	public static <T> Enumeration<T> mergeCollection (Enumeration<T> orgValue, Enumeration<T> overriddenValue) {

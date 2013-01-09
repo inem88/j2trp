@@ -11,5 +11,7 @@
   
   
   <bean id="faultyReverseProxy" class="com.j2trp.core.ReverseProxy"/>
+  
+  <bean id="interceptingFilter" class="com.j2trp.core.filter.CoreFilterTest"/>
 
 </beans>

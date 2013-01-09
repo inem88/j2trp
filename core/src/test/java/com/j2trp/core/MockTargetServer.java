@@ -18,6 +18,7 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.SecurityContext;
 
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -63,8 +64,9 @@ public class MockTargetServer {
 	@Produces("text/html")
 	@Consumes("application/x-www-form-urlencoded")
 	@Path("/someFile.html")
-	public Response executePost (@Context Request req, @FormParam("userid") String username, @FormParam("password") String password) throws IOException {
+	public Response executePost (@HeaderParam("X-Auth-User") String userHeader, @Context Request req, @FormParam("userid") String username, @FormParam("password") String password) throws IOException {
 		
+		System.out.println("And the remote user is: " + userHeader);
 		ResponseBuilder builder = Response.ok();
 		builder.entity(String.format("<html><head><title>MockTargetServer</title></head><body>%s:%s</body></html>", username, password));
 		return builder.build();

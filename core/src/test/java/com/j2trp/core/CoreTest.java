@@ -5,11 +5,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
+import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockServletConfig;
@@ -218,7 +220,10 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		req.setContent(formData);
 		req.addHeader("Content-Length", formData.length);
 		req.addHeader("Connection", "keep-alive");
-		reverseProxyServlet.service(req, resp);
+		MockFilterChain mockFilterChain = new MockFilterChain();
+		super.applicationContext.getBean("interceptingFilter", Filter.class).doFilter(req, resp, mockFilterChain);
+		Assert.assertNotSame(mockFilterChain.getRequest(), req);
+		reverseProxyServlet.service(mockFilterChain.getRequest(), resp);
 		Assert.assertEquals(200, resp.getStatus());
 		String contentAsString = resp.getContentAsString();
 		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body>joe:guessme</body></html>", contentAsString);
