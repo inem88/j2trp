@@ -25,6 +25,7 @@ import org.testng.annotations.Test;
 
 import com.heimore.test.util.EmbeddedServiceContainer;
 import com.j2trp.core.ReverseProxy;
+import com.j2trp.core.filter.TestFilter;
 
 @ContextConfiguration(locations = "classpath:reverseProxyContext.xml")
 @Test
@@ -221,7 +222,8 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		req.addHeader("Content-Length", formData.length);
 		req.addHeader("Connection", "keep-alive");
 		MockFilterChain mockFilterChain = new MockFilterChain();
-		super.applicationContext.getBean("interceptingFilter", Filter.class).doFilter(req, resp, mockFilterChain);
+		Filter filter = new TestFilter();
+		filter.doFilter(req, resp, mockFilterChain);
 		Assert.assertNotSame(mockFilterChain.getRequest(), req);
 		reverseProxyServlet.service(mockFilterChain.getRequest(), resp);
 		Assert.assertEquals(200, resp.getStatus());

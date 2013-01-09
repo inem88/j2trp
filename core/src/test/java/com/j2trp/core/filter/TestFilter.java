@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.j2trp.core.ModifiableHttpRequest;
 
-public class CoreFilterTest implements Filter {
+public class TestFilter implements Filter {
 
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
