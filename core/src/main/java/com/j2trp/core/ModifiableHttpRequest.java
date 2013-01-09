@@ -66,6 +66,8 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	boolean requestedSessionIdFromCookie;
 	boolean requestedSessionIdFromCookieUrl;
 	boolean requestedSessionIdFromCookieURL;
+	Map<String, Object> attributes = new HashMap<String, Object>();
+	String contentType;
 	
 	public ModifiableHttpRequest(HttpServletRequest request) {
 		super(request);
@@ -213,63 +215,54 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public Object getAttribute(String name) {
-		// TODO Auto-generated method stub
-		return super.getAttribute(name);
+		return Toolbox.getValue(super.getAttribute(name), attributes.get(name), Object.class);
 	}
 
 	@Override
-	public Enumeration getAttributeNames() {
-		// TODO Auto-generated method stub
-		return super.getAttributeNames();
+	@SuppressWarnings("unchecked")
+	public Enumeration<String> getAttributeNames() {
+		return Toolbox.mergeCollection(super.getAttributeNames(), Collections.enumeration(attributes.keySet()));
 	}
 
 	@Override
 	public String getCharacterEncoding() {
-		// TODO Auto-generated method stub
-		return super.getCharacterEncoding();
+		return Toolbox.getValue(super.getCharacterEncoding(), characterEncoding, String.class);
 	}
 
 	@Override
 	public void setCharacterEncoding(String enc)
 			throws UnsupportedEncodingException {
-		// TODO Auto-generated method stub
-		super.setCharacterEncoding(enc);
+		characterEncoding = enc;
 	}
 
 	@Override
 	public int getContentLength() {
-		// TODO Auto-generated method stub
-		return super.getContentLength();
+		return Toolbox.getValue(super.getContentLength(), contentLength, -1, Integer.class);
 	}
 
 	@Override
 	public String getContentType() {
-		// TODO Auto-generated method stub
-		return super.getContentType();
+		return Toolbox.getValue(super.getContentType(), contentType, String.class);
 	}
 
 	@Override
 	public ServletInputStream getInputStream() throws IOException {
-		// TODO Auto-generated method stub
 		return super.getInputStream();
 	}
 
 	@Override
 	public String getParameter(String name) {
-		// TODO Auto-generated method stub
-		return super.getParameter(name);
+		return Toolbox.getValue(super.getParameter(name), parameterMap.get(name), String.class);
 	}
 
 	@Override
 	public Map getParameterMap() {
-		// TODO Auto-generated method stub
 		return super.getParameterMap();
 	}
 
 	@Override
-	public Enumeration getParameterNames() {
-		// TODO Auto-generated method stub
-		return super.getParameterNames();
+	public Enumeration<String> getParameterNames() {
+		return Toolbox.mergeCollection(super.getParameterNames(), Collections.enumeration(parameterMap.keySet()));
 	}
 
 	@Override
@@ -280,44 +273,37 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public String getProtocol() {
-		// TODO Auto-generated method stub
-		return super.getProtocol();
+		return Toolbox.getValue(super.getProtocol(), protocol, String.class);
 	}
 
 	@Override
 	public String getScheme() {
-		// TODO Auto-generated method stub
-		return super.getScheme();
+		return Toolbox.getValue(super.getScheme(), scheme, String.class);
 	}
 
 	@Override
 	public String getServerName() {
-		// TODO Auto-generated method stub
-		return super.getServerName();
+		return Toolbox.getValue(super.getServerName(), serverName, String.class);
 	}
 
 	@Override
 	public int getServerPort() {
-		// TODO Auto-generated method stub
-		return super.getServerPort();
+		return Toolbox.getValue(super.getServerPort(), serverPort, Integer.class);
 	}
 
 	@Override
 	public BufferedReader getReader() throws IOException {
-		// TODO Auto-generated method stub
 		return super.getReader();
 	}
 
 	@Override
 	public String getRemoteAddr() {
-		// TODO Auto-generated method stub
-		return super.getRemoteAddr();
+		return Toolbox.getValue(super.getRemoteAddr(), remoteAddr, String.class);
 	}
 
 	@Override
 	public String getRemoteHost() {
-		// TODO Auto-generated method stub
-		return super.getRemoteHost();
+		return Toolbox.getValue(super.getRemoteHost(), remoteHost, String.class);
 	}
 
 	@Override
@@ -328,62 +314,53 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public void removeAttribute(String name) {
-		// TODO Auto-generated method stub
 		super.removeAttribute(name);
 	}
 
 	@Override
 	public Locale getLocale() {
-		// TODO Auto-generated method stub
-		return super.getLocale();
+		return Toolbox.getValue(super.getLocale(), locale, Locale.class);
 	}
 
 	@Override
 	public Enumeration getLocales() {
-		// TODO Auto-generated method stub
+		// TODO: Added enumeration for locales
 		return super.getLocales();
 	}
 
 	@Override
 	public boolean isSecure() {
-		// TODO Auto-generated method stub
-		return super.isSecure();
+		return Toolbox.getValue(super.isSecure(), secure, Boolean.class);
 	}
 
 	@Override
 	public RequestDispatcher getRequestDispatcher(String path) {
-		// TODO Auto-generated method stub
-		return super.getRequestDispatcher(path);
+		return Toolbox.getValue(super.getRequestDispatcher(path), requestDispatcher, RequestDispatcher.class);
 	}
 
 	@Override
 	public String getRealPath(String path) {
-		// TODO Auto-generated method stub
-		return super.getRealPath(path);
+		return Toolbox.getValue(super.getRealPath(path), realPath, String.class);
 	}
 
 	@Override
 	public int getRemotePort() {
-		// TODO Auto-generated method stub
-		return super.getRemotePort();
+		return Toolbox.getValue(super.getRemotePort(), remotePort, Integer.class);
 	}
 
 	@Override
 	public String getLocalName() {
-		// TODO Auto-generated method stub
-		return super.getLocalName();
+		return Toolbox.getValue(super.getLocalName(), localName, String.class);
 	}
 
 	@Override
 	public String getLocalAddr() {
-		// TODO Auto-generated method stub
-		return super.getLocalAddr();
+		return Toolbox.getValue(super.getLocalAddr(), localAddr, String.class);
 	}
 
 	@Override
 	public int getLocalPort() {
-		// TODO Auto-generated method stub
-		return super.getLocalPort();
+		return Toolbox.getValue(super.getLocalPort(), localPort, Integer.class);
 	}
 	
 	
