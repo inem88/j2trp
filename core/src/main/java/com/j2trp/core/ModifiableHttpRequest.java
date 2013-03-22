@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpSession;
 
-import com.heimore.exa.sso.UserPrincipalKeys;
 
 public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 

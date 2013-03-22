@@ -23,9 +23,9 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.heimore.test.util.EmbeddedServiceContainer;
 import com.j2trp.core.ReverseProxy;
 import com.j2trp.core.filter.TestFilter;
+import com.j2trp.test.util.EmbeddedServiceContainer;
 
 @ContextConfiguration(locations = "classpath:reverseProxyContext.xml")
 @Test
