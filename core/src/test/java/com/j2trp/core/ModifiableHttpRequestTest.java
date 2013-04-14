@@ -24,7 +24,7 @@ public class ModifiableHttpRequestTest {
 		
 		modReq.setAttribute(TEST_ATTR_NAME, TEST_ATTR_VALUE);
 		// modReq.setCharacterEncoding("UTF-8");
-		Assert.assertEquals(modReq.getCharacterEncoding(), "UTF-8");
+		Assert.assertEquals(modReq.getCharacterEncoding(), "ISO-8859-1");
 		// Assert.assertNotSame(modReq.getAttribute(TEST_ATTR_NAME), TEST_ATTR_VALUE);
   }
 }
