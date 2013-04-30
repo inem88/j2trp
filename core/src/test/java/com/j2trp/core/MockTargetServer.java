@@ -18,9 +18,6 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.SecurityContext;
-
-import org.springframework.web.servlet.view.RedirectView;
 
 @Path("/")
 public class MockTargetServer {

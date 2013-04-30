@@ -1,12 +1,17 @@
 package com.j2trp.core;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
 import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
@@ -321,5 +326,48 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		
 		
 		Assert.assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resp.getStatus());
+	}
+	
+	public void testUrlRewriteQueryString() throws Exception {
+	  
+	  MockHttpServletRequest req = createReq("GET", "/j2trp/redirect.html");
+    MockHttpServletResponse resp = new MockHttpServletResponse();
+    final HttpServlet reverseProxyServlet = super.applicationContext.getBean(
+        "reverseProxy", HttpServlet.class);
+    
+    req.addHeader("Accept", "*/*");
+    req.addHeader("User-Agent", "MockHttpServletRequest");
+    
+    Filter queryRewrite = new Filter() {
+      
+      HttpServlet proxy = reverseProxyServlet;
+
+      @Override
+      public void init(FilterConfig filterConfig) throws ServletException { }
+
+      @Override
+      public void doFilter(ServletRequest request, ServletResponse response,
+          FilterChain chain) throws IOException, ServletException {
+        
+        proxy.service(request, response);
+        
+        MockHttpServletResponse mockResponse = (MockHttpServletResponse) response;
+        String modifiedRedirect = mockResponse.getRedirectedUrl();
+        modifiedRedirect = modifiedRedirect.replace("q1=v1", "q2=v2");
+        mockResponse.setCommitted(false);
+        mockResponse.sendRedirect(modifiedRedirect);
+        mockResponse.setCommitted(true);
+        
+      }
+
+      @Override
+      public void destroy() { }
+      
+    };
+    
+    queryRewrite.doFilter(req, resp, null);
+    Assert.assertEquals(302, resp.getStatus());
+    
+    Assert.assertEquals(resp.getRedirectedUrl(), "https://my.revproxy.org:4711/j2trp/other_location.html?q2=v2");
 	}
 }

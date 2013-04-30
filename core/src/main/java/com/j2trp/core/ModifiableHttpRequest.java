@@ -47,7 +47,7 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	Locale locale;
 	String localName;
 	int localPort;
-	Map<String, String> parameterMap;
+	Map<String, String[]> parameterMap;
 	BufferedReader reader;
 	String realPath;
 	String remoteAddr;
@@ -267,8 +267,7 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public String[] getParameterValues(String name) {
-		// TODO Auto-generated method stub
-		return super.getParameterValues(name);
+		return Toolbox.merge(super.getParameterValues(name), parameterMap.get(name), String[].class);
 	}
 
 	@Override
@@ -308,8 +307,7 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public void setAttribute(String name, Object o) {
-		// TODO Auto-generated method stub
-		super.setAttribute(name, o);
+		 attributes.put(name, o);
 	}
 
 	@Override
@@ -323,9 +321,9 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	}
 
 	@Override
-	public Enumeration getLocales() {
-		// TODO: Added enumeration for locales
-		return super.getLocales();
+	@SuppressWarnings("unchecked")
+	public Enumeration<Locale> getLocales() {
+		return Toolbox.mergeCollection(super.getLocales(), new SingleValueEnumeration<Locale>(locale));
 	}
 
 	@Override
@@ -449,7 +447,7 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 		this.localPort = localPort;
 	}
 
-	public void setParameterMap(Map<String, String> parameterMap) {
+	public void setParameterMap(Map<String, String[]> parameterMap) {
 		this.parameterMap = parameterMap;
 	}
 
