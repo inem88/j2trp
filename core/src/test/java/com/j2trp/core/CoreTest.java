@@ -159,7 +159,6 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		Assert.assertEquals(200, resp.getStatus());
 		String contentAsString = resp.getContentAsString();
 		Assert.assertEquals("<html><head><title>MockTargetServer</title></head><body><h1>It works with cookie: MY_COOKIE</h1></body></html>", contentAsString);
-		
 	}
 	
 	@Test
@@ -188,7 +187,9 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		Assert.assertEquals("/j2trp", completeCookie.getPath());
 		Assert.assertEquals(true, completeCookie.getSecure());
 		Assert.assertEquals(1, completeCookie.getVersion());
+		Assert.assertNotNull(resp.getCookie("NEW_COOKIE_VERSION"));
 	}
+	
 	
 	@Test(enabled = true)
 	public void testNormalRequestWithQueryString() throws Exception {

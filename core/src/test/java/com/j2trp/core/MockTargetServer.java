@@ -51,7 +51,9 @@ public class MockTargetServer {
 		ResponseBuilder builder = Response.ok();
 		NewCookie simpleCookie = new NewCookie("SIMPLE", "COOKIE", null, null, 0, null, -1, false);
 		NewCookie domainCookie = new NewCookie("COMPLETE", "VALUE2", "/sfibonusadmin", ".example.org", "Some comment.", 0, true);
+		NewCookie v2Cookie = new NewCookie("NEW_COOKIE_VERSION", "2", null, null, 1, null, -1, false);
 		builder.cookie(simpleCookie, domainCookie);
+		builder.header("Set-Cookie2", v2Cookie.toString());
 		String responseMessage = cookie + (cookie2 != null ? ":" + cookie2 : "");
 		builder.entity("<html><head><title>MockTargetServer</title></head><body><h1>It works with cookie: " + responseMessage + "</h1></body></html>");
 		return builder.build();
