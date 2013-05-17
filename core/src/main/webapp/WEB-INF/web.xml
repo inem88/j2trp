@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	id="WebApp_ID" version="2.5">
+	<display-name>J2 Transparent Reverse Proxy</display-name>
 
-<web-app xmlns:javaee="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
-  <javaee:display-name>Archetype Created Web Application</javaee:display-name>
-
-  <servlet>
-      <init-param>
-        <param-name>TARGET_URL</param-name>
-        <param-value>http://www.aftonbladet.se</param-value>
-      </init-param>
-    <javaee:description></javaee:description>
-    <javaee:display-name>ReverseProxy</javaee:display-name>
-    <servlet-name>ReverseProxy</servlet-name>
-    <servlet-class>com.j2trp.core.ReverseProxy</servlet-class>
-    
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>ReverseProxy</servlet-name>
-    <url-pattern>/*</url-pattern>
-  </servlet-mapping>
+	<servlet>
+		<description></description>
+		<display-name>ReverseProxy</display-name>
+		<servlet-name>ReverseProxy</servlet-name>
+		<servlet-class>com.j2trp.core.ReverseProxy</servlet-class>
+		<init-param>
+			<param-name>configFile</param-name>
+			<param-value>j2trp.properties</param-value>
+		</init-param>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>ReverseProxy</servlet-name>
+		<url-pattern>/*</url-pattern>
+	</servlet-mapping>
 </web-app>

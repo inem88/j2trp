@@ -17,6 +17,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 
 import javax.net.ssl.SSLSocket;
@@ -49,6 +50,8 @@ public class ReverseProxy extends HttpServlet {
 	private static final byte[] HEADER_END_MARKER = new byte[] { (byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a };
 	private static final String XFF_HEADER_NAME = "X-Forwarded-For";
 
+	private Properties config = new Properties();
+	
 	/**
 	 * The address of the upstream server.
 	 */
@@ -798,6 +801,8 @@ public class ReverseProxy extends HttpServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
+		
+		
 		
 		URL targetUrl = null;
 		try {
