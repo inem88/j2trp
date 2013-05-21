@@ -53,7 +53,7 @@ public class Settings {
       }
     }
     catch (UnsupportedOperationException e) {
-      LOG.warn("Trying to create new watch service...failed, unsupported.");
+      LOG.warn("Trying to create new watch service...failed, unsupported. Only a system restart will reload the properties.");
     }
   }
   
@@ -79,13 +79,12 @@ public class Settings {
           for (WatchEvent<?> event : key.pollEvents()) {
             
             if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-              LOG.warn("Config file has been deleted, retaining the current settings in memory.");
+              LOG.warn("Properties file has been deleted, retaining the current settings in memory.");
             }
             else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
               LOG.info("Config file has been modified, initiating reload...");
               try {
                 propObj.set(loadFile(propertiesFile));
-                LOG.info(String.format("Property file %s successfully reloaded, %d entries read.", propertiesFile, propObj.get().size()));
               }
               catch (IOException e) {
                 LOG.error("I/O Exception when trying to reload file, retaining the current settings in memory.", e);
@@ -95,7 +94,6 @@ public class Settings {
               LOG.info("Config file has been recreated, initiating reload...");
               try {
                 propObj.set(loadFile(propertiesFile));
-                LOG.info(String.format("Property file %s successfully reloaded, %d entries read.", propertiesFile, propObj.get().size()));
               }
               catch (IOException e) {
                 LOG.error("I/O Exception when trying to reload file, retaining the current settings in memory.", e);
@@ -124,11 +122,12 @@ public class Settings {
     try (InputStream is = new FileInputStream(configFile)) {
       result.load(is);
     }
-    
+    LOG.info(String.format("Properties file successfully loaded, %d entries read.", result.size()));
     return result;
   }
   
   public String getProperty (String key) {
     return props.get().getProperty(key);
   }
+  
 }
