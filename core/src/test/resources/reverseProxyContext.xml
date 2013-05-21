@@ -12,4 +12,6 @@
   
   <bean id="faultyReverseProxy" class="com.j2trp.core.ReverseProxy"/>
   
+  <bean id="tightTimeoutReverseProxy" class="com.j2trp.core.ReverseProxy"/>
+  
 </beans>

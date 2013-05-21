@@ -7,7 +7,7 @@ import java.util.Enumeration;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-@Test
+@Test(suiteName = "J2TRP")
 public class ToolboxTest {
 	public void testMerge() {
 		Integer[] org = new Integer[3];

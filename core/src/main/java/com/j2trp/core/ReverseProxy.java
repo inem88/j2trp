@@ -1,6 +1,7 @@
 package com.j2trp.core;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,6 +32,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
+import com.j2trp.core.config.Setting;
+import com.j2trp.core.config.Settings;
+
 public class ReverseProxy extends HttpServlet {
 	
 	private static final int BUFFER_SIZE = 1024;
@@ -50,7 +54,7 @@ public class ReverseProxy extends HttpServlet {
 	private static final byte[] HEADER_END_MARKER = new byte[] { (byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a };
 	private static final String XFF_HEADER_NAME = "X-Forwarded-For";
 
-	private Properties config = new Properties();
+	private Settings settings;
 	
 	/**
 	 * The address of the upstream server.
@@ -77,6 +81,10 @@ public class ReverseProxy extends HttpServlet {
 	 */
 	private boolean useSsl;
 
+	/**
+	 * How long to wait for the connection to the upstream server to become established. 
+	 */
+	private int socketTimeoutMs;
 	
 	/**
 	 * This method copies headers from the incoming request to the request going to the upstream server.
@@ -433,13 +441,13 @@ public class ReverseProxy extends HttpServlet {
 		Socket result;
 		if (useSsl) {
 			SSLSocket sslSocket = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
-			sslSocket.connect(new InetSocketAddress(targetHost, targetPort), 30000); // TODO: Parameterize this timeout
+			sslSocket.connect(new InetSocketAddress(targetHost, targetPort), socketTimeoutMs); 
 			LOG.debug(String.format("Connected to %s:%d using SSL, cipher suite in session: %s", targetHost, targetPort, sslSocket.getSession().getCipherSuite()));
 			result = sslSocket;
 		}
 		else {
 			result = new Socket();
-			result.connect(new InetSocketAddress(targetHost, targetPort), 30000); // TODO: Parameterize this timeout
+			result.connect(new InetSocketAddress(targetHost, targetPort), socketTimeoutMs); 
 			LOG.debug(String.format("Connected to %s:%d using a regular socket.", targetHost, targetPort));
 		}
 		
@@ -801,13 +809,25 @@ public class ReverseProxy extends HttpServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
+		File configFile = new File(config.getInitParameter("configFile"));
 		
+		if (!configFile.isAbsolute()) {
+		  LOG.info("configFile is determined to be " + configFile);
+		}
+		if (!configFile.exists()) {
+		  throw new ServletException("configFile doesn't appear to exist.");
+		}
 		
+		try {
+		  settings = new Settings(configFile);
+		}
+		catch (IOException e) {
+		  throw new ServletException(e);
+		}
 		
 		URL targetUrl = null;
 		try {
-			LOG.info("Servlet param TARGET_URL is: " + config.getInitParameter("TARGET_URL"));
-			targetUrl = new URL(config.getInitParameter("TARGET_URL"));
+			targetUrl = new URL(settings.getProperty(Setting.TARGET_URL));
 		}
 		catch (MalformedURLException e) {
 			throw new ServletException(e);
@@ -823,6 +843,8 @@ public class ReverseProxy extends HttpServlet {
 		
 		targetBaseUri = targetUrl.getPath();
 		baseUri = config.getServletContext().getContextPath();
+		
+		socketTimeoutMs = settings.getPropertyAsInt(Setting.TARGET_SOCKET_TIMEOUT_MS);
 	}
 
 	

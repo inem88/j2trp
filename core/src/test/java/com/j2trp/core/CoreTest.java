@@ -1,7 +1,7 @@
 package com.j2trp.core;
 
 import java.io.IOException;
-import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,12 +28,11 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.j2trp.core.ReverseProxy;
 import com.j2trp.core.filter.TestFilter;
 import com.j2trp.test.util.EmbeddedServiceContainer;
 
 @ContextConfiguration(locations = "classpath:reverseProxyContext.xml")
-@Test
+@Test(suiteName = "J2TRP")
 public class CoreTest extends AbstractTestNGSpringContextTests {
 
 	EmbeddedServiceContainer svcContainer;
@@ -47,6 +46,13 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 				EmbeddedServiceContainer.BASE_URI, PORT, "/sfibonusadmin");
 	}
 
+	private static String getRealFilePath (String resource) {
+	  URL resourceUrl = CoreTest.class.getClassLoader().getResource(resource);
+	  
+	  return resourceUrl.getPath();
+	}
+	
+	
 	@BeforeClass
 	public void setup() throws ServletException, IOException {
 		HttpServlet reverseProxyServlet = super.applicationContext.getBean(
@@ -54,7 +60,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		MockServletContext servletCtx = new MockServletContext();
 		servletCtx.setContextPath("/j2trp");
 		MockServletConfig servletConfig = new MockServletConfig(servletCtx);
-		servletConfig.addInitParameter("TARGET_URL", "http://localhost:64000/sfibonusadmin");
+		servletConfig.addInitParameter("configFile", getRealFilePath("normal_j2trp.properties"));
 		reverseProxyServlet.init(servletConfig);
 		svcContainer.startServer();
 		
@@ -63,7 +69,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		MockServletContext sslServletCtx = new MockServletContext();
 		sslServletCtx.setContextPath("/j2trp_ssl");
 		MockServletConfig sslServletConfig = new MockServletConfig(sslServletCtx);
-		sslServletConfig.addInitParameter("TARGET_URL", "https://localhost:65000");
+		sslServletConfig.addInitParameter("configFile", getRealFilePath("ssl_j2trp.properties"));
 		sslReverseProxyServlet.init(sslServletConfig);
 		
 		String pathToKeystore = CoreTest.class.getClassLoader().getResource("unit_test_ssl.keystore").toExternalForm().substring(5);
@@ -82,8 +88,16 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		MockServletContext faultyServletCtx = new MockServletContext();
 		faultyServletCtx.setContextPath("/j2trp_faulty");
 		MockServletConfig faultyServletConfig = new MockServletConfig(faultyServletCtx);
-		faultyServletConfig.addInitParameter("TARGET_URL", "https://nonexistent.host.drok");
+		faultyServletConfig.addInitParameter("configFile", getRealFilePath("bogus_j2trp.properties"));
 		faultyReverseProxyServlet.init(faultyServletConfig);
+		
+		// Tight time-out proxy setup
+		HttpServlet timeoutReverseProxyServlet = super.applicationContext.getBean("tightTimeoutReverseProxy", HttpServlet.class);
+    MockServletContext timeoutServletCtx = new MockServletContext();
+    timeoutServletCtx.setContextPath("/j2trp_timeout");
+    MockServletConfig timeoutServletConfig = new MockServletConfig(timeoutServletCtx);
+    timeoutServletConfig.addInitParameter("configFile", getRealFilePath("timeout_j2trp.properties"));
+    timeoutReverseProxyServlet.init(timeoutServletConfig);
 	}
 
 	@AfterClass
@@ -279,6 +293,18 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
 		
 		Assert.assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resp.getStatus());
 	}
+	
+	@Test
+  public void testTightSocketTimeout() throws Exception {
+    MockHttpServletRequest req = createReq("GET", "/j2trp_timeout/whatever");
+    MockHttpServletResponse resp = new MockHttpServletResponse();
+    HttpServlet reverseProxyServlet = super.applicationContext.getBean(
+        "tightTimeoutReverseProxy", HttpServlet.class);
+    
+    reverseProxyServlet.service(req, resp);
+    
+    Assert.assertEquals(resp.getStatus(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+  }
 	
 	@Test(enabled = false)
 	public void testBrokenPipe() throws Exception {

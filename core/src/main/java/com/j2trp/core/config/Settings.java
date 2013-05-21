@@ -126,8 +126,12 @@ public class Settings {
     return result;
   }
   
-  public String getProperty (String key) {
-    return props.get().getProperty(key);
+  public String getProperty (Setting key) {
+    return props.get().getProperty(String.valueOf(key), key.getDefaultValue());
+  }
+  
+  public int getPropertyAsInt (Setting key) {
+    return Integer.parseInt(props.get().getProperty(key.toString(), key.getDefaultValue()));
   }
   
 }
