@@ -43,6 +43,7 @@ public class Settings {
       synchronized (SINGLETON_LOCK) {
         
         if (backgroundThread != null) {
+          LOG.debug("Background thread is already allocated, status: " + backgroundThread.getState());
           return;
         }
         
