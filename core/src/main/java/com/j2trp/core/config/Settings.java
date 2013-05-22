@@ -21,36 +21,33 @@ public class Settings {
   private static final Logger LOG = Logger.getLogger(Settings.class);
   private static final Object SINGLETON_LOCK = new Object();
   private static Thread backgroundThread;
+  private static WatchService watchService;
   // TODO: Investigate whether or not props could be declared volatile instead. 
   AtomicReference<Properties> props = new AtomicReference<Properties>();
   
   public Settings (File configFile) throws IllegalArgumentException, IOException {
     
     props.set(loadFile(configFile));
-    
-    FileSystem fs = FileSystems.getDefault();
-    
-    try {
-      WatchService watchService = fs.newWatchService();
 
-      Path pathToConfigFile = configFile.toPath();
-      Path pathToConfifFileDirectory = pathToConfigFile.getParent();
-      pathToConfifFileDirectory.register(watchService, 
-          StandardWatchEventKinds.ENTRY_MODIFY, 
-          StandardWatchEventKinds.ENTRY_DELETE, 
-          StandardWatchEventKinds.ENTRY_CREATE);
-      
+    try {
+     
       synchronized (SINGLETON_LOCK) {
         
-        if (backgroundThread != null) {
-          LOG.debug("Background thread is already allocated, status: " + backgroundThread.getState());
-          return;
+        if (backgroundThread == null) {
+          FileSystem fs = FileSystems.getDefault();
+          WatchService watchService = fs.newWatchService();
+          backgroundThread = new Thread(new PropertiesFileWatcher(watchService, configFile, props), "PropertiesFileWatcher thread");
+          backgroundThread.setDaemon(true);
+          backgroundThread.start();
+          LOG.info("Started background thread");
         }
-        
-        backgroundThread = new Thread(new PropertiesFileWatcher(watchService, configFile, props), "PropertiesFileWatcher thread");
-        backgroundThread.setDaemon(true);
-        backgroundThread.start();
-        LOG.info("Started background thread");
+        Path pathToConfigFile = configFile.toPath();
+        Path pathToConfifFileDirectory = pathToConfigFile.getParent();
+        pathToConfifFileDirectory.register(watchService, 
+            StandardWatchEventKinds.ENTRY_MODIFY, 
+            StandardWatchEventKinds.ENTRY_DELETE, 
+            StandardWatchEventKinds.ENTRY_CREATE);
+        LOG.info("Added new watch for properties file " + configFile);
       }
     }
     catch (UnsupportedOperationException e) {
