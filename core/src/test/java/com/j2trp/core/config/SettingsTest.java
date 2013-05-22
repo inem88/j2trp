@@ -28,6 +28,8 @@ public class SettingsTest {
 
     Assert.assertEquals(settings.getProperty(Setting.TARGET_URL), "Value1");
 
+    
+    Thread.sleep(3000);
     // Try updating the file.
     System.out.println(String.format("Updating %s to %s", Setting.TARGET_SOCKET_TIMEOUT_MS, UPDATE_VALUE_1));
     
@@ -67,6 +69,8 @@ public class SettingsTest {
 
     Assert.assertEquals(settings.getProperty(Setting.TARGET_URL), "Value1");
 
+    
+    Thread.sleep(3000);
     // Try updating the file.
     System.out.println(String.format("Updating %s to %s", Setting.TARGET_SOCKET_TIMEOUT_MS, UPDATE_VALUE_1));
     
