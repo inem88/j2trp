@@ -8,9 +8,11 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -18,110 +20,62 @@ import org.apache.log4j.Logger;
 
 public class Settings {
   
-  private static final Logger LOG = Logger.getLogger(Settings.class);
-  private static final Object SINGLETON_LOCK = new Object();
+  static final Logger LOG = Logger.getLogger(Settings.class);
   private static Thread backgroundThread;
   private static WatchService watchService;
-  // TODO: Investigate whether or not props could be declared volatile instead. 
+  
+  /**
+   * This map must be synchronized in order to avoid a race condition between the time we 
+   * register a watchable and the thread waiting for an event.
+   */
+  static final Map<WatchKey, Path> watchKeys = Collections.synchronizedMap(new HashMap<WatchKey, Path>());
+  static final Map<File, Settings> metaDataMap = new HashMap<>();
+
   AtomicReference<Properties> props = new AtomicReference<Properties>();
+  File propertiesFile;
   
   public Settings (File configFile) throws IllegalArgumentException, IOException {
     
-    props.set(loadFile(configFile));
+    this.propertiesFile = configFile;
+    reload();
 
-    try {
-     
-      synchronized (SINGLETON_LOCK) {
+      synchronized (watchKeys) {
         
-        if (backgroundThread == null) {
+        if (watchKeys.isEmpty()) {
           FileSystem fs = FileSystems.getDefault();
           watchService = fs.newWatchService();
-          backgroundThread = new Thread(new PropertiesFileWatcher(watchService, configFile, props), "PropertiesFileWatcher thread");
+          backgroundThread = new Thread(new PropertiesFileWatcher(watchService), "PropertiesFileWatcher thread");
           backgroundThread.setDaemon(true);
           backgroundThread.start();
           LOG.info("Started background thread");
         }
+        
         Path pathToConfigFile = configFile.toPath();
-        Path pathToConfifFileDirectory = pathToConfigFile.getParent();
-        pathToConfifFileDirectory.register(watchService, 
+        Path watchedDir = pathToConfigFile.getParent();
+        
+        WatchKey key = watchedDir.register(watchService, 
             StandardWatchEventKinds.ENTRY_MODIFY, 
             StandardWatchEventKinds.ENTRY_DELETE, 
             StandardWatchEventKinds.ENTRY_CREATE);
+        // Add check to see if we are already watching this dir/file.
+        watchKeys.put(key, watchedDir);
         LOG.info("Added new watch for properties file " + configFile);
+        metaDataMap.put(configFile, this);
+        
+        LOG.info(String.format("Currently watching %d file%s", metaDataMap.size(), (metaDataMap.size() == 1 ? "" : "s")));
       }
-    }
-    catch (UnsupportedOperationException e) {
-      LOG.warn("Trying to create new watch service...failed, unsupported. Only a system restart will reload the properties.");
-    }
   }
   
-  private static class PropertiesFileWatcher implements Runnable {
-    WatchService watcher;
-    File propertiesFile;
-    AtomicReference<Properties> propObj;
-    
-    PropertiesFileWatcher (WatchService watcher, File propertiesFile, AtomicReference<Properties> propObj) {
-      this.watcher = watcher;
-      this.propertiesFile = propertiesFile;
-      this.propObj = propObj; 
-    }
-    
-    @Override
-    public void run() {
-      
-      boolean active = true;
-      
-      while (active) {
-        try {
-          WatchKey key = watcher.take();
-          for (WatchEvent<?> event : key.pollEvents()) {
-            
-            if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-              LOG.warn("Properties file has been deleted, retaining the current settings in memory.");
-            }
-            else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-              LOG.info("Properties file has been modified, initiating reload...");
-              try {
-                propObj.set(loadFile(propertiesFile));
-              }
-              catch (IOException e) {
-                LOG.error("I/O Exception when trying to reload file, retaining the current settings in memory.", e);
-              }
-            }
-            else if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE ) { 
-              LOG.info("Config file has been recreated, initiating reload...");
-              try {
-                propObj.set(loadFile(propertiesFile));
-              }
-              catch (IOException e) {
-                LOG.error("I/O Exception when trying to reload file, retaining the current settings in memory.", e);
-              }
-            }
-          }
-          key.reset();
-          
-        }
-        catch (InterruptedException e) {
-          LOG.warn(Thread.currentThread().getName() + " was interrupted. Changes in the settings file will no longer be detected.");
-          // TODO: watcher.close();
-          active = false;
-          break;
-        }
-      }
-    }
-    
-    
-  }
-  
-  private static Properties loadFile (File configFile) throws IOException {
+  void reload() throws IOException {
     
     Properties result = new Properties();
     
-    try (InputStream is = new FileInputStream(configFile)) {
+    try (InputStream is = new FileInputStream(propertiesFile)) {
       result.load(is);
     }
-    LOG.info(String.format("Properties file successfully loaded: %d entries read, modified timestamp is %tF %<tT", result.size(), configFile.lastModified()));
-    return result;
+    
+    props.set(result);
+    LOG.info(String.format("Properties file %s successfully loaded: %d entries read, modified timestamp is %tF %<tT", propertiesFile, result.size(), propertiesFile.lastModified()));
   }
   
   public String getProperty (Setting key) {
