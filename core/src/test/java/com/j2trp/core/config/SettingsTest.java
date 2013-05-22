@@ -50,7 +50,7 @@ public class SettingsTest {
     
     
     // Try recreating the file.
-    System.out.println(String.format("Recreating file adn setting %s to %s", Setting.TARGET_SOCKET_TIMEOUT_MS, UPDATE_VALUE_2));
+    System.out.println(String.format("Recreating file and setting %s to %s", Setting.TARGET_SOCKET_TIMEOUT_MS, UPDATE_VALUE_2));
     props.setProperty(Setting.TARGET_SOCKET_TIMEOUT_MS.toString(), UPDATE_VALUE_2);
     updatePropFile(props, tempFile);
     Thread.sleep(10000);
@@ -62,6 +62,7 @@ public class SettingsTest {
       FileNotFoundException {
     try (PrintWriter pw = new PrintWriter(tempFile)) {
       props.store(pw, "");
+      pw.flush();
     }
   }
   
