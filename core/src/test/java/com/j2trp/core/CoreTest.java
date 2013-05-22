@@ -32,7 +32,7 @@ import com.j2trp.core.filter.TestFilter;
 import com.j2trp.test.util.EmbeddedServiceContainer;
 
 @ContextConfiguration(locations = "classpath:reverseProxyContext.xml")
-@Test(suiteName = "J2TRP")
+@Test(groups = "J2TRP")
 public class CoreTest extends AbstractTestNGSpringContextTests {
 
 	EmbeddedServiceContainer svcContainer;

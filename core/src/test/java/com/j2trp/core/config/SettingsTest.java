@@ -9,7 +9,7 @@ import java.util.Properties;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-@Test(suiteName = "J2TRP")
+@Test(groups = "J2TRP")
 public class SettingsTest {
   
   private static final String UPDATE_VALUE_2 = "20000";

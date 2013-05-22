@@ -35,7 +35,7 @@ public class Settings {
         
         if (backgroundThread == null) {
           FileSystem fs = FileSystems.getDefault();
-          WatchService watchService = fs.newWatchService();
+          watchService = fs.newWatchService();
           backgroundThread = new Thread(new PropertiesFileWatcher(watchService, configFile, props), "PropertiesFileWatcher thread");
           backgroundThread.setDaemon(true);
           backgroundThread.start();
