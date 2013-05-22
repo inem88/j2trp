@@ -38,24 +38,24 @@ class PropertiesFileWatcher implements Runnable {
           }
           
           if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-            Settings.LOG.warn("Properties file has been deleted, retaining the current settings in memory.");
+            Settings.LOG.warn(String.format("Properties file %s has been deleted, retaining the current settings in memory.", watchedFile));
           }
           else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-            Settings.LOG.info("Properties file has been modified, initiating reload...");
+            Settings.LOG.info(String.format("Properties file %s has been modified, initiating reload...", watchedFile));
             try {
               settings.reload();
             }
             catch (IOException e) {
-              Settings.LOG.error("I/O Exception when trying to reload file, retaining the current settings in memory.", e);
+              Settings.LOG.error(String.format("I/O Exception when trying to reload file %s, retaining the current settings in memory.", watchedFile), e);
             }
           }
           else if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE ) { 
-            Settings.LOG.info("Config file has been recreated, initiating reload...");
+            Settings.LOG.info(String.format("Properties file %s has been recreated, initiating reload...", watchedFile));
             try {
               settings.reload();
             }
             catch (IOException e) {
-              Settings.LOG.error("I/O Exception when trying to reload file, retaining the current settings in memory.", e);
+              Settings.LOG.error(String.format("I/O Exception when trying to reload file %s, retaining the current settings in memory.", watchedFile), e);
             }
           }
         }

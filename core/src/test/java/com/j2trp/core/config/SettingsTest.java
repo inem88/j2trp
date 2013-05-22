@@ -28,16 +28,10 @@ public class SettingsTest {
 
     Assert.assertEquals(settings.getProperty(Setting.TARGET_URL), "Value1");
 
-    
-    Thread.sleep(3000);
-    System.out.println("Before");
-    props.list(System.out);
     // Try updating the file.
     System.out.println(String.format("Updating %s to %s", Setting.TARGET_SOCKET_TIMEOUT_MS, UPDATE_VALUE_1));
     
     props.setProperty(Setting.TARGET_SOCKET_TIMEOUT_MS.toString(), UPDATE_VALUE_1);
-    System.out.println("After updating");
-    props.list(System.out);
     updatePropFile(props, tempFile);
     Thread.sleep(10000);
     Assert.assertNotNull(settings.getProperty(Setting.TARGET_URL));
@@ -73,16 +67,10 @@ public class SettingsTest {
 
     Assert.assertEquals(settings.getProperty(Setting.TARGET_URL), "Value1");
 
-    
-    Thread.sleep(3000);
-    System.out.println("Before");
-    props.list(System.out);
     // Try updating the file.
     System.out.println(String.format("Updating %s to %s", Setting.TARGET_SOCKET_TIMEOUT_MS, UPDATE_VALUE_1));
     
     props.setProperty(Setting.TARGET_SOCKET_TIMEOUT_MS.toString(), UPDATE_VALUE_1);
-    System.out.println("After updating");
-    props.list(System.out);
     updatePropFile(props, tempFile);
     Thread.sleep(10000);
     Assert.assertNotNull(settings.getProperty(Setting.TARGET_URL));
