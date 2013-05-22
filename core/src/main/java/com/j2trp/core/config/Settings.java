@@ -82,7 +82,7 @@ public class Settings {
               LOG.warn("Properties file has been deleted, retaining the current settings in memory.");
             }
             else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-              LOG.info("Config file has been modified, initiating reload...");
+              LOG.info("Properties file has been modified, initiating reload...");
               try {
                 propObj.set(loadFile(propertiesFile));
               }
@@ -122,7 +122,7 @@ public class Settings {
     try (InputStream is = new FileInputStream(configFile)) {
       result.load(is);
     }
-    LOG.info(String.format("Properties file successfully loaded, %d entries read.", result.size()));
+    LOG.info(String.format("Properties file successfully loaded: %d entries read, modified timestamp is %tF %<tT", result.size(), configFile.lastModified()));
     return result;
   }
   

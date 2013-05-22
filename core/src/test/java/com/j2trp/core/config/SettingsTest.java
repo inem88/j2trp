@@ -12,6 +12,9 @@ import org.testng.annotations.Test;
 @Test(suiteName = "J2TRP")
 public class SettingsTest {
   
+  private static final String UPDATE_VALUE_2 = "20000";
+  private static final String UPDATE_VALUE_1 = "15000";
+
   @Test
   public void testSettingsObject() throws IOException, InterruptedException {
     File tempFile = File.createTempFile("SettingsTest-", ".tmp");
@@ -29,27 +32,30 @@ public class SettingsTest {
     Thread.sleep(3000);
     
     // Try updating the file.
-    props.setProperty(Setting.TARGET_SOCKET_TIMEOUT_MS.toString(), "15000");
+    System.out.println(String.format("Updating %s to %s", Setting.TARGET_SOCKET_TIMEOUT_MS, UPDATE_VALUE_1));
+    props.setProperty(Setting.TARGET_SOCKET_TIMEOUT_MS.toString(), UPDATE_VALUE_1);
     
     updatePropFile(props, tempFile);
     
     Thread.sleep(10000);
     Assert.assertNotNull(settings.getProperty(Setting.TARGET_URL));
-    Assert.assertEquals(settings.getProperty(Setting.TARGET_SOCKET_TIMEOUT_MS), "15000");
+    Assert.assertEquals(settings.getProperty(Setting.TARGET_SOCKET_TIMEOUT_MS), UPDATE_VALUE_1);
     
     // Try deleting the file.
     tempFile.delete();
+    System.out.println("Properties file deleted: " + !tempFile.exists());
     Thread.sleep(10000);
     Assert.assertNotNull(settings.getProperty(Setting.TARGET_URL));
-    Assert.assertEquals(settings.getProperty(Setting.TARGET_SOCKET_TIMEOUT_MS), "15000");
+    Assert.assertEquals(settings.getProperty(Setting.TARGET_SOCKET_TIMEOUT_MS), UPDATE_VALUE_1);
     
     
     // Try recreating the file.
-    props.setProperty(Setting.TARGET_SOCKET_TIMEOUT_MS.toString(), "20000");
+    System.out.println(String.format("Recreating file adn setting %s to %s", Setting.TARGET_SOCKET_TIMEOUT_MS, UPDATE_VALUE_2));
+    props.setProperty(Setting.TARGET_SOCKET_TIMEOUT_MS.toString(), UPDATE_VALUE_2);
     updatePropFile(props, tempFile);
     Thread.sleep(10000);
     Assert.assertNotNull(settings.getProperty(Setting.TARGET_URL));
-    Assert.assertEquals(settings.getProperty(Setting.TARGET_SOCKET_TIMEOUT_MS), "20000");
+    Assert.assertEquals(settings.getProperty(Setting.TARGET_SOCKET_TIMEOUT_MS), UPDATE_VALUE_2);
   }
 
   private static void updatePropFile(Properties props, File tempFile) throws IOException,
