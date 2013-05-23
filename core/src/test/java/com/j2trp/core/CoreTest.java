@@ -303,7 +303,7 @@ public class CoreTest extends AbstractTestNGSpringContextTests {
     
     reverseProxyServlet.service(req, resp);
     
-    Assert.assertEquals(resp.getStatus(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    Assert.assertEquals(resp.getStatus(), HttpServletResponse.SC_GATEWAY_TIMEOUT);
   }
 	
 	@Test(enabled = false)
