@@ -8,7 +8,7 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 
-class PropertiesFileWatcher implements Runnable {
+final class PropertiesFileWatcher implements Runnable {
   WatchService watcher;
   
   PropertiesFileWatcher (WatchService watcher) {

@@ -9,6 +9,7 @@ import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -18,7 +19,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 
 import javax.net.ssl.SSLSocket;
@@ -54,7 +54,7 @@ public class ReverseProxy extends HttpServlet {
 	private static final byte[] HEADER_END_MARKER = new byte[] { (byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a };
 	private static final String XFF_HEADER_NAME = "X-Forwarded-For";
 
-	private Settings settings;
+	private transient Settings settings;
 	
 	/**
 	 * The address of the upstream server.
@@ -436,7 +436,7 @@ public class ReverseProxy extends HttpServlet {
 	 * @throws UnknownHostException If the upstream server address cannot be resolved or connected to. 
 	 * @throws IOException If there's a low-level I/O error while creating the socket.
 	 */
-	protected Socket createSocket() throws UnknownHostException, IOException {
+	protected Socket createSocket() throws UnknownHostException, IOException, SocketTimeoutException {
 		
 		Socket result;
 		if (useSsl) {
@@ -471,19 +471,15 @@ public class ReverseProxy extends HttpServlet {
 			   socket = createSocket();
 			}
 			catch (UnknownHostException e) {
-				String errorCode = UUID.randomUUID().toString();
-				String msg = String.format("Target server not reachable, your personal error code is %s, please contact support and provide this error code.", errorCode);
-				String logMsg = String.format("Generated error code %s", errorCode);
-				LOG.error(logMsg, e);
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, msg);
+				generateError(response, "Target server not reachable", HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
 				return;
 			}
+			catch (SocketTimeoutException e) {
+			  generateError(response, "I/O timeout when connecting the target", HttpServletResponse.SC_GATEWAY_TIMEOUT, e);
+			  return;
+			}
 			catch (IOException e) {
-				String errorCode = UUID.randomUUID().toString();
-				String msg = String.format("I/O error when connecting the target, your personal error code is %s, please contact support and provide this error code.", errorCode);
-				String logMsg = String.format("Generated error code %s", errorCode);
-				LOG.error(logMsg, e);
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, msg);
+			  generateError(response, "I/O error when connecting the target", HttpServletResponse.SC_BAD_GATEWAY, e);
 				return;
 			}
 			long connectStamp = System.currentTimeMillis();
@@ -656,6 +652,20 @@ public class ReverseProxy extends HttpServlet {
 			}
 		}
 	}
+
+  /**
+   * @param resp
+   * @param e
+   * @throws IOException
+   */
+  private static void generateError(HttpServletResponse resp, String txt, int httpStatusCode, Exception e)
+      throws IOException {
+    String errorCode = UUID.randomUUID().toString();
+    String msg = String.format(txt + ", your personal error code is %s, please contact support and provide this error code.", errorCode);
+    String logMsg = String.format("Generated error code %s", errorCode);
+    LOG.error(logMsg, e);
+    resp.sendError(httpStatusCode, msg);
+  }
 
 	/**
 	 * Internal method that dumps the returning headers from the upstream server that will ultimately go into the log.

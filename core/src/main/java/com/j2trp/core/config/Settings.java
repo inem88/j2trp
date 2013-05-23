@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.log4j.Logger;
 
-public class Settings {
+public final class Settings {
   
   static final Logger LOG = Logger.getLogger(Settings.class);
   private static Thread backgroundThread;
