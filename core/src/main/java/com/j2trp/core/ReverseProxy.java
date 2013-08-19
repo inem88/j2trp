@@ -825,7 +825,7 @@ public class ReverseProxy extends HttpServlet {
 		  LOG.info("configFile is determined to be " + configFile);
 		}
 		if (!configFile.exists()) {
-		  throw new ServletException("configFile doesn't appear to exist.");
+		  throw new ServletException("configFile doesn't appear to exist @ " + configFile);
 		}
 		
 		try {
