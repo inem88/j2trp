@@ -25,49 +25,49 @@ import javax.servlet.http.HttpSession;
 
 public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 
-	String authType;
-	Cookie[] cookies;
-	Map<String, List<String>> headers = new HashMap<String, List<String>>();
-	String method;
-	String pathInfo;
-	String pathTranslated;
-	String contextPath;
-	String queryString;
-	String remoteUser;
-	Set<String> userInRole = new HashSet<String>();
-	Principal principal;
-	String protocol;
-	String scheme;
-	Integer port;
-	String serverName;
-	String characterEncoding;
-	int contentLength;
-	ServletInputStream is;
-	String localAddr;
-	Locale locale;
-	String localName;
-	int localPort;
-	Map<String, String[]> parameterMap;
-	BufferedReader reader;
-	String realPath;
-	String remoteAddr;
-	String remoteHost;
-	int remotePort;
-	ServletRequest servletRequest;
-	RequestDispatcher requestDispatcher;
-	String requestedSessionId;
-	String requestURI;
-	StringBuffer requestURL;
-	int serverPort;
-	String servletPath;
-	HttpSession session;
-	boolean secure;
-	boolean requestedSessionIdValue;
-	boolean requestedSessionIdFromCookie;
-	boolean requestedSessionIdFromCookieUrl;
-	boolean requestedSessionIdFromCookieURL;
-	Map<String, Object> attributes = new HashMap<String, Object>();
-	String contentType;
+	private String authType;
+	private Cookie[] cookies;
+	private Map<String, List<String>> headers = new HashMap<String, List<String>>();
+	private String method;
+	private String pathInfo;
+	private String pathTranslated;
+	private String contextPath;
+	private String queryString;
+	private String remoteUser;
+	private Set<String> userInRole = new HashSet<String>();
+	private Principal principal;
+	private String protocol;
+	private String scheme;
+	private Integer port;
+	private String serverName;
+	private String characterEncoding;
+	private int contentLength;
+	private ServletInputStream is;
+	private String localAddr;
+	private Locale locale;
+	private String localName;
+	private int localPort;
+	private Map<String, String[]> parameterMap;
+	private BufferedReader reader;
+	private String realPath;
+	private String remoteAddr;
+	private String remoteHost;
+	private int remotePort;
+	private ServletRequest servletRequest;
+	private RequestDispatcher requestDispatcher;
+	private String requestedSessionId;
+	private String requestURI;
+	private StringBuffer requestURL;
+	private int serverPort;
+	private String servletPath;
+	private HttpSession session;
+	private boolean secure;
+	private boolean requestedSessionIdValue;
+	private boolean requestedSessionIdFromCookie;
+	private boolean requestedSessionIdFromCookieUrl;
+	private boolean requestedSessionIdFromCookieURL;
+	private Map<String, Object> attributes = new HashMap<String, Object>();
+	private String contentType;
 	
 	public ModifiableHttpRequest(HttpServletRequest request) {
 		super(request);
@@ -366,6 +366,12 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	}
 
 	public void setCookies(Cookie[] cookies) {
+	  if (cookies == null) {
+	    this.cookies = null;
+	    return;
+	  }
+	  this.cookies = new Cookie[cookies.length];
+	  System.arraycopy(cookies, 0, this.cookies, 0, this.cookies.length);
 		this.cookies = cookies;
 	}
 
