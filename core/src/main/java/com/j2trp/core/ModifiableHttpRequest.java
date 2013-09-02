@@ -372,7 +372,6 @@ public class ModifiableHttpRequest extends HttpServletRequestWrapper {
 	  }
 	  this.cookies = new Cookie[cookies.length];
 	  System.arraycopy(cookies, 0, this.cookies, 0, this.cookies.length);
-		this.cookies = cookies;
 	}
 
 	public void addHeader(String header, String value) {
