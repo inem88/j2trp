@@ -34,6 +34,8 @@ import org.apache.log4j.Logger;
 
 import com.j2trp.core.config.Setting;
 import com.j2trp.core.config.Settings;
+import com.j2trp.core.socket.PlainSocketFactory;
+import com.j2trp.core.socket.DefaultSocketFactory;
 
 public class ReverseProxy extends HttpServlet {
 	
@@ -85,6 +87,11 @@ public class ReverseProxy extends HttpServlet {
 	 * How long to wait for the connection to the upstream server to become established. 
 	 */
 	private int socketTimeoutMs;
+	
+	/**
+	 * Which socket factory to use.
+	 */
+	private volatile PlainSocketFactory socketFactory = new DefaultSocketFactory();
 	
 	/**
 	 * This method copies headers from the incoming request to the request going to the upstream server.
@@ -446,7 +453,13 @@ public class ReverseProxy extends HttpServlet {
 			result = sslSocket;
 		}
 		else {
-			result = new Socket();
+		  
+		  if (socketFactory != null) {
+    		result = socketFactory.createSocket();
+		  }
+		  else {
+		    result = new Socket();
+		  }
 			result.connect(new InetSocketAddress(targetHost, targetPort), socketTimeoutMs); 
 			LOG.debug(String.format("Connected to %s:%d using a regular socket.", targetHost, targetPort));
 		}
@@ -855,8 +868,36 @@ public class ReverseProxy extends HttpServlet {
 		baseUri = config.getServletContext().getContextPath();
 		
 		socketTimeoutMs = settings.getPropertyAsInt(Setting.TARGET_SOCKET_TIMEOUT_MS);
+		
+		try {
+		  Class<?> plainSocketFactoryClass = Class.forName(settings.getProperty(Setting.PLAIN_SOCKET_FACTORY));
+		  if (plainSocketFactoryClass.isAssignableFrom(PlainSocketFactory.class)) {
+		    socketFactory = (PlainSocketFactory) plainSocketFactoryClass.newInstance();
+		  }
+		  else {
+		    LOG.warn(String.format("The class specified by the setting parameter \"%s\"=%s "
+	          + "is not assignable to a %s, defaulting to %s", 
+	          Setting.PLAIN_SOCKET_FACTORY, 
+	          settings.getProperty(Setting.PLAIN_SOCKET_FACTORY), 
+	          PlainSocketFactory.class.getName(),
+	          DefaultSocketFactory.class.getName()));
+		  }
+		  
+		}
+		catch (ClassNotFoundException e) {
+		  LOG.warn(String.format("%s is declaring a class %s that isn't visible on the classpath.", 
+		      Setting.PLAIN_SOCKET_FACTORY, settings.getProperty(Setting.PLAIN_SOCKET_FACTORY)));
+		}
+		catch (Exception e) {
+		  LOG.warn(String.format("The class specified by the setting parameter \"%s\"=%s "
+		      + "could not be instanciated, defaulting to %s", 
+		      Setting.PLAIN_SOCKET_FACTORY,
+		      settings.getProperty(Setting.PLAIN_SOCKET_FACTORY),
+		      DefaultSocketFactory.class.getName()));
+		}
 	}
 
+	
 	
 	
 }
