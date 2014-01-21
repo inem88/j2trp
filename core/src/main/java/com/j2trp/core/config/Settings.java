@@ -16,11 +16,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Settings {
   
-  static final Logger LOG = Logger.getLogger(Settings.class);
+  static final Logger LOG = LoggerFactory.getLogger(Settings.class);
   private static Thread backgroundThread;
   private static WatchService watchService;
   
