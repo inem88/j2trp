@@ -30,12 +30,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.j2trp.core.config.Setting;
 import com.j2trp.core.config.Settings;
 import com.j2trp.core.socket.PlainSocketFactory;
-import com.j2trp.core.socket.DefaultSocketFactory;
+import com.j2trp.core.socket.DefaultSocketFactoryImpl;
 
 public class ReverseProxy extends HttpServlet {
 	
@@ -47,7 +48,7 @@ public class ReverseProxy extends HttpServlet {
 	private static final String SET_COOKIE_HDR = "Set-Cookie";
 	private static final String HDR_SEPARATOR = ": ";
 	private static final String HOST_HDR = "Host";
-	private static final Logger LOG = Logger.getLogger(ReverseProxy.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ReverseProxy.class);
 	private static final String LS = System.getProperty("line.separator");
 	private static final long serialVersionUID = 1L;
 	private static final Charset ASCII = Charset.forName("US-ASCII");
@@ -91,7 +92,7 @@ public class ReverseProxy extends HttpServlet {
 	/**
 	 * Which socket factory to use.
 	 */
-	private volatile PlainSocketFactory socketFactory = new DefaultSocketFactory();
+	private volatile PlainSocketFactory socketFactory = new DefaultSocketFactoryImpl();
 	
 	/**
 	 * This method copies headers from the incoming request to the request going to the upstream server.
@@ -639,7 +640,7 @@ public class ReverseProxy extends HttpServlet {
 				dumpOutgoingHeaders(httpVerb.toString(), outgoingHeaders, touchedHeaders, sb);
 				dumpReturningHeadersFromTarget(httpStatus, headersFromTargetMap, sb);
 				dumpReturningHeadersToClient(httpStatus == null, redirectUrl, sb);
-				LOG.trace(sb);
+				LOG.trace(sb.toString());
 			}
 					
 			targetOutputStream.close();
@@ -880,7 +881,7 @@ public class ReverseProxy extends HttpServlet {
 	          Setting.PLAIN_SOCKET_FACTORY, 
 	          settings.getProperty(Setting.PLAIN_SOCKET_FACTORY), 
 	          PlainSocketFactory.class.getName(),
-	          DefaultSocketFactory.class.getName()));
+	          DefaultSocketFactoryImpl.class.getName()));
 		  }
 		  
 		}
@@ -893,7 +894,7 @@ public class ReverseProxy extends HttpServlet {
 		      + "could not be instanciated, defaulting to %s", 
 		      Setting.PLAIN_SOCKET_FACTORY,
 		      settings.getProperty(Setting.PLAIN_SOCKET_FACTORY),
-		      DefaultSocketFactory.class.getName()));
+		      DefaultSocketFactoryImpl.class.getName()));
 		}
 	}
 
