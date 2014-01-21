@@ -92,7 +92,7 @@ public class ReverseProxy extends HttpServlet {
 	/**
 	 * Which socket factory to use.
 	 */
-	private volatile PlainSocketFactory socketFactory = new DefaultSocketFactoryImpl();
+	private transient volatile PlainSocketFactory socketFactory = new DefaultSocketFactoryImpl();
 	
 	/**
 	 * This method copies headers from the incoming request to the request going to the upstream server.
