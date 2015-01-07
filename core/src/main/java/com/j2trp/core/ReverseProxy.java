@@ -178,7 +178,7 @@ public class ReverseProxy extends HttpServlet {
      */
     protected static List<Cookie> convertCookies (List<HttpCookie> cookies, String targetBaseUri, String baseUri) {
     	
-    	List<Cookie> result = new ArrayList<Cookie>(cookies.size());
+    	List<Cookie> result = new ArrayList<>(cookies.size());
     	
     	for (HttpCookie cookie : cookies) {
     		
@@ -212,7 +212,7 @@ public class ReverseProxy extends HttpServlet {
      * @param baseUri The base URI of this proxy.
      */
     protected static void copyCookiesFromResponse (List<String> rawCookieValues, HttpServletResponse resp, String targetBaseUri, String baseUri) {
-    	List<HttpCookie> allCookies = new ArrayList<HttpCookie>();
+    	List<HttpCookie> allCookies = new ArrayList<>();
     	for (String rawCookie : rawCookieValues) {
     		allCookies.addAll(HttpCookie.parse(rawCookie));
     	}
@@ -336,7 +336,7 @@ public class ReverseProxy extends HttpServlet {
 	static void addHeader (Map<String, List<String>> map, String key, String value) {
 		List<String> headerValue = map.get(key);
 		if (headerValue == null) {
-			headerValue = new ArrayList<String>();
+			headerValue = new ArrayList<>();
 			map.put(key, headerValue);
 		}
 		headerValue.add(value);
@@ -484,7 +484,7 @@ public class ReverseProxy extends HttpServlet {
 				return;
 			}
 			long connectStamp = System.currentTimeMillis();
-			Map<String, TouchedHeader> touchedHeaders = new HashMap<String, TouchedHeader>();
+			Map<String, TouchedHeader> touchedHeaders = new HashMap<>();
 			ByteArrayOutputStream headerBuffer = new ByteArrayOutputStream();
 			// Build HTTP verb and request URI.
 			StringBuilder httpVerb = new StringBuilder();
@@ -551,7 +551,7 @@ public class ReverseProxy extends HttpServlet {
 			int markerIndex = 0;
 			boolean headerFound = false;
 			int bodyMarker = 0;
-			Map<String, List<String>> headersFromTargetMap = new HashMap<String, List<String>>();
+			Map<String, List<String>> headersFromTargetMap = new HashMap<>();
 			HttpStatus httpStatus = null;	
 			boolean headerAlreadyWritten = false;
 			String redirectUrl = "";
