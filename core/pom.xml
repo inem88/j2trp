@@ -3,7 +3,7 @@
   <groupId>com.j2trp</groupId>
   <artifactId>core</artifactId>
   <packaging>war</packaging>
-  <version>1.0.5</version>
+  <version>1.0.6-SNAPSHOT</version>
   <name>J2 Transparent Reverse Proxy</name>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -164,7 +164,7 @@
   <scm>
     <developerConnection>scm:git:https://github.com/dr01g/j2trp.git</developerConnection>
     <connection>scm:git:https://github.com/dr01g/j2trp.git</connection>
-    <tag>core-1.0.5</tag>
+    <tag>HEAD</tag>
   </scm>
   <distributionManagement>
     <repository>
