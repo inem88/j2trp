@@ -3,9 +3,8 @@
   <groupId>com.j2trp</groupId>
   <artifactId>core</artifactId>
   <packaging>war</packaging>
-  <version>1.0.4-SNAPSHOT</version>
+  <version>1.0.5-SNAPSHOT</version>
   <name>J2 Transparent Reverse Proxy</name>
-  <url>http://maven.apache.org</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <j2trp.spring.version>3.0.5.RELEASE</j2trp.spring.version>
@@ -14,6 +13,7 @@
     <j2trp.grizzly.version>1.9.18d</j2trp.grizzly.version>
     <j2trp.jdk.version>1.7</j2trp.jdk.version>
     <powermock.version>1.5.4</powermock.version>
+    <project.scm.id>github</project.scm.id>
   </properties>
   <dependencies>
     <dependency>
@@ -157,13 +157,20 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>2.3.2</version>
+        <version>2.5.3</version>
       </plugin>
     </plugins>
   </build>
   <scm>
     <developerConnection>scm:git:https://github.com/dr01g/j2trp.git</developerConnection>
-  	<connection>scm:git:https://github.com/dr01g/j2trp.git</connection>
-    <tag>core-1.0</tag>
+    <connection>scm:git:https://github.com/dr01g/j2trp.git</connection>
+    <tag>HEAD</tag>
   </scm>
+  <distributionManagement>
+    <repository>
+      <id>bintray</id>
+      <name>Bintray</name>
+      <url>https://api.bintray.com/maven/daniel4711/maven/J2TRP/;publish=0</url>
+    </repository>
+  </distributionManagement>
 </project>
