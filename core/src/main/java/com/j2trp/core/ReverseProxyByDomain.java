@@ -53,7 +53,7 @@ import com.j2trp.core.config.Settings;
 
 public class ReverseProxyByDomain {
 	
-	private static final int BUFFER_SIZE = 1024;
+	private static final int BUFFER_SIZE = 10000;
 	private static final String CONNECTION_HDR = "Connection";
 	private static final String COOKIE_HDR = "Cookie";
 	private static final String LOCATION_HDR = "Location";
@@ -606,7 +606,7 @@ public class ReverseProxyByDomain {
 			
 			ByteArrayOutputStream httpBodyBuffer = new ByteArrayOutputStream();
 			// If request is a POST, relay the body of the request.
-			if (request.getMethod().equals("POST")) {
+			if (!request.getMethod().equals("GET")) {
 				InputStream is = request.getInputStream();
 				int bytesRead = is.read(byteBuffer);
 				while (bytesRead != -1) {
@@ -620,20 +620,29 @@ public class ReverseProxyByDomain {
 			byte[] headerBufferAsBytes = headerBuffer.toByteArray();
 			byte[] httpBodyBufferAsBytes = httpBodyBuffer.toByteArray();
 			System.out.println("REQUEST:" );
+			long startRequest = System.currentTimeMillis();
 			System.out.println("-----------------------------" );
 			System.out.println(new String(headerBufferAsBytes));
+			System.out.println(new String(httpBodyBufferAsBytes));
 			System.out.println("-----------------------------" );
 			targetOutputStream.write(headerBufferAsBytes);
 			targetOutputStream.write(httpBodyBufferAsBytes);
 			targetOutputStream.flush();
 			long socketWrite = System.currentTimeMillis();
+			System.out.println("REQUEST_TIME: "+(socketWrite-startRequest) );
+			
 			// Ok, done with pushing out data to the target server.
 
 			// Read response from target server.
+			System.out.println("REQUEST_1: " );
 			InputStream proxiedInputSteam = socket.getInputStream();
+			System.out.println("REQUEST_2: " );
 			OutputStream clientsRespOs = response.getOutputStream();
+			System.out.println("REQUEST_3: " );
 			ByteArrayOutputStream bufferedHeadersFromTarget = new ByteArrayOutputStream();
+			System.out.println("REQUEST_4: " );
 			int bytesRead = proxiedInputSteam.read(byteBuffer);
+			System.out.println("REQUEST_5: " );
 			// META-DATA
 			int markerIndex = 0;
 			boolean headerFound = false;
