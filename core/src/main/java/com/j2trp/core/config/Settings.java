@@ -97,7 +97,11 @@ public final class Settings {
   public String getProperty (Setting key) {
     return props.get().getProperty(String.valueOf(key), key.getDefaultValue());
   }
-  
+
+  public String getProperty (String key) {
+	    return props.get().getProperty(String.valueOf(key));
+  }
+
   public int getPropertyAsInt (Setting key) {
     return Integer.parseInt(props.get().getProperty(key.toString(), key.getDefaultValue()));
   }

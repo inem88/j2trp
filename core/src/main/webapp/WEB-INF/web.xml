@@ -12,7 +12,7 @@
 		<servlet-class>com.j2trp.core.ReverseProxy</servlet-class>
 		<init-param>
 			<param-name>configFile</param-name>
-			<param-value>j2trp.properties</param-value>
+			<param-value>/opt/conf/j2trp.properties</param-value>
 		</init-param>
 	</servlet>
 	<servlet-mapping>

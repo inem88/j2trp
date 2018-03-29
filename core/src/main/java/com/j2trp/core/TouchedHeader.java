@@ -27,9 +27,11 @@ enum TouchedHeader {
 		case CHANGED:
 			return "*";
 		default:
+			return "default";
 			// This should not be possible unless the programmer as added an enum value and forgot to
 			// override its toString() value.
-			throw new NullPointerException(); 
+
+			//throw new NullPointerException(); 
 		}
 	}
 	
